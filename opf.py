@@ -1,6 +1,7 @@
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
-from constants import T, V_MIN, V_MAX, FLEX_PRICE, PV_COST, ESS_COST, DISCOMFORT_COEFF, ETA_CH, ETA_DIS, LOAD_PROFILE, PV_CAPACITY, PV_PROFILE, MAX_POWER_REDUCTION_PERCENT, E_MIN, E_MAX, P_CH_MAX, P_DIS_MAX
+from math import acos, tan
+from constants import T, V_MIN, V_MAX, FLEX_PRICE, PV_COST, ESS_COST, DISCOMFORT_COEFF, ETA_CH, ETA_DIS, LOAD_PROFILE, PV_CAPACITY, COS_PHIMAX, PV_PROFILE, MAX_POWER_REDUCTION_PERCENT, E_MIN, E_MAX, P_CH_MAX, P_DIS_MAX
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,20 +42,20 @@ def opf_model(network_data):
 
     # Define Variables
     model.Pred = pyo.Var(model.B, model.T, within=pyo.NonNegativeReals, bounds=lambda model, b, t: (0, model.Pred_max[b, t]))  # Power reduction by building
-    # model.Qpv = pyo.Var(model.G, model.T, within=pyo.NonNegativeReals)  # Reactive power provided by PVs
+    model.Qpv = pyo.Var(model.G, model.T, within=pyo.NonNegativeReals)  # Reactive power provided by PVs
     model.Pesc = pyo.Var(model.K, model.T, within=pyo.NonNegativeReals, bounds=(0, model.Pch_max))  # Power charged to ESS
     model.Pesd = pyo.Var(model.K, model.T, within=pyo.NonNegativeReals, bounds=(0, model.Pdis_max)) # Power discharged from ESS
-    # model.V = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals)  # Voltage at each bus
     model.E = pyo.Var(model.K, model.T, within=pyo.NonNegativeReals, bounds=(model.Emin, model.Emax)) # Energy of the ESS
     model.Pl = pyo.Var(model.L, model.T, within=pyo.Reals)  # Active power flow on each line
     model.Ql = pyo.Var(model.L, model.T, within=pyo.Reals)  # Reactive power flow on each line
-    model.I = pyo.Var(model.L, model.T, within=pyo.NonNegativeReals)  # Current flow on each line
+    model.Isqr = pyo.Var(model.L, model.T, within=pyo.NonNegativeReals)  # Current flow on each line
+    model.charging_indicator = pyo.Var(model.K, model.T, within=pyo.Binary) # Binary variable that shows if the ESS is charging
 
     # Define Variables with conditional initialization
-    model.V = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals, initialize=lambda model, n, t: 1 if network_data['bus_types'][n] == 1 else 1)
+    model.Vsqr = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals, initialize=lambda model, n, t: 1 if network_data['bus_types'][n] == 1 else 1)
     for n in model.N:
         if network_data['bus_types'][n] == 1:
-            model.V[n, :].fixed = True  # Fix voltage at substations
+            model.Vsqr[n, :].fixed = True  # Fix voltage at substations
 
     model.Ps = pyo.Var(model.N, model.T, within=pyo.Reals, initialize=lambda model, n, t: 0 if network_data['bus_types'][n] == 0 else 0)
     for n in model.N:
@@ -68,7 +69,7 @@ def opf_model(network_data):
 
     # Define Objective Function
     def objective_rule(model):
-        return sum(model.lambda_flex[t] * model.Pred[b, t] - model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) - model.discomfort[b] * model.Pred[b, t] for b in model.B for k in model.K for t in model.T)
+        return sum(model.lambda_flex[t] * model.Pred[b, t] - model.cost_pv[g] * model.Qpv[g, t] - model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) - model.discomfort[b] * model.Pred[b, t] for b in model.B for k in model.K for g in model.G for t in model.T)
     model.obj = pyo.Objective(rule=objective_rule, sense=pyo.maximize)    
 
     # Define Constraints
@@ -76,7 +77,7 @@ def opf_model(network_data):
     def active_power_flow_rule(model, n, t):
         # Sum of outgoing power - Sum of incoming power + generation - load = 0 at each bus
         return (sum(model.Pl[i, j, t] for (i, j) in model.L if j == n) -
-                sum(model.Pl[i, j, t] + model.R[i, j] * model.I[i, j, t] for (i, j) in model.L if i == n) +
+                sum(model.Pl[i, j, t] + model.R[i, j] * model.Isqr[i, j, t] for (i, j) in model.L if i == n) +
                 sum(model.Pesd[k, t] for k in model.K if k == n) -  
                 sum(model.Pesc[k, t] for k in model.K if k == n) -  
                 sum(model.Pred[b, t] for b in model.B if b == n) -  
@@ -87,27 +88,31 @@ def opf_model(network_data):
 
     def reactive_power_flow_rule(model, n, t):
         return (sum(model.Ql[i, j, t] for (i, j) in model.L if j == n) -
-                sum(model.Ql[i, j, t] + model.X[i, j] * model.I[i, j, t] for (i, j) in model.L if i == n) +
-                #  + sum(model.Qpv[g, t] for g in model.G if g == n) -
+                sum(model.Ql[i, j, t] + model.X[i, j] * model.Isqr[i, j, t] for (i, j) in model.L if i == n) +
+                sum(model.Qpv[g, t] for g in model.G if g == n) +
                 model.Qs[n, t] - 
                 model.Qload[n, t] == 0)
     model.reactive_power_flow = pyo.Constraint(model.N, model.T, rule=reactive_power_flow_rule)
 
+    def Qpv_constraint_rule(model, g, t):
+        return (-tan(acos(COS_PHIMAX)) * model.Ppv[g, t], model.Qpv[g, t], tan(acos(COS_PHIMAX)) * model.Ppv[g, t])
+    model.Qpv_control = pyo.Constraint(model.G, model.T, rule=Qpv_constraint_rule)
+
     def voltage_drop_rule(model, i, j, t):
-        return model.V[i, t] - 2 * (model.R[i, j] * model.Pl[i, j, t] + model.X[i, j] * model.Ql[i, j, t]) - \
-            (model.R[i, j]**2 + model.X[i, j]**2) * model.I[i, j, t] == model.V[j, t]
+        return model.Vsqr[i, t] - 2 * (model.R[i, j] * model.Pl[i, j, t] + model.X[i, j] * model.Ql[i, j, t]) - \
+            (model.R[i, j]**2 + model.X[i, j]**2) * model.Isqr[i, j, t] == model.Vsqr[j, t]
     model.voltage_drop = pyo.Constraint(model.L, model.T, rule=voltage_drop_rule)
 
     def define_current_rule(model, i, j, t):
-        return model.I[i, j, t] * model.V[j, t] == (model.Pl[i, j, t]**2 + model.Ql[i, j, t]**2)
+        return model.Isqr[i, j, t] * model.Vsqr[j, t] == (model.Pl[i, j, t]**2 + model.Ql[i, j, t]**2)
     model.define_current = pyo.Constraint(model.L, model.T, rule=define_current_rule)
 
     def current_limit_rule(model, i, j, t):
-        return model.I[i, j, t] <= model.Imax[i, j]**2
+        return model.Isqr[i, j, t] <= model.Imax[i, j]**2
     model.current_limit = pyo.Constraint(model.L, model.T, rule=current_limit_rule)
 
     def voltage_limit_rule(model, n, t):
-        return (model.Vmin**2, model.V[n, t], model.Vmax**2)
+        return (model.Vmin**2, model.Vsqr[n, t], model.Vmax**2)
     model.voltage_limit = pyo.Constraint(model.N, model.T, rule=voltage_limit_rule)
 
     def ess_energy_balance_rule(model, k, t):
@@ -121,42 +126,54 @@ def opf_model(network_data):
                      (1 / model.eta_dis[k]) * model.Pesd[k, t-1]))
     model.ess_energy_balance = pyo.Constraint(model.K, model.T, rule=ess_energy_balance_rule)
 
-    def no_simultaneous_charge_discharge_rule(model, k, t):
-        return model.Pesc[k, t] * model.Pesd[k, t] == 0
-    model.no_simultaneous_charge_discharge = pyo.Constraint(model.K, model.T, rule=no_simultaneous_charge_discharge_rule)
+    def no_simultaneous_charge_rule(model, k, t):
+        return model.Pesc[k, t] <= model.Pch_max * (1 - model.charging_indicator[k, t])
+    model.no_simultaneous_charge = pyo.Constraint(model.K, model.T, rule=no_simultaneous_charge_rule)
+
+    def no_simultaneous_discharge_rule(model, k, t):
+        return model.Pesd[k, t] <= model.Pdis_max * model.charging_indicator[k, t]
+    model.no_simultaneous_discharge = pyo.Constraint(model.K, model.T, rule=no_simultaneous_discharge_rule)
 
     # Solve the model
-    solver = SolverFactory('ipopt')
-    result = solver.solve(model, tee=True)
+    solver = SolverFactory('mindtpy')
+    result = solver.solve(model, tee=False)
     
     if result.solver.status != pyo.SolverStatus.ok:
         logger.error(f'Solver failed to find a solution')
         raise Exception('Solver failed to find a solution')
     
-        # Extract and store the solution
+    # Extract and store the solution
     solution = {
         'Power Reduction': {},
-        # 'PV Reactive Power': {},
+        'PV Reactive Power': {},
         'ESS Charging': {},
         'ESS Discharging': {},
-        'Voltage': {},
+        'Voltage Squared': {},
         'Active Power Flow': {},
         'Reactive Power Flow': {},
-        'Current': {},
-        'ESS Energy': {}
+        'Current Squared': {},
+        'ESS Energy': {},
+        'Charging Indicator': {},
+        'Active Power Load': {},  
+        'Reactive Power Load': {}, 
+        'PV Active Power': {}  
     }
 
     # Extract results for each time period and component
     for t in model.T:
         solution['Power Reduction'][t] = {b: model.Pred[b, t].value for b in model.B}
-        # solution['PV Reactive Power'][t] = {g: model.Qpv[g, t].value for g in model.G}
+        solution['PV Reactive Power'][t] = {g: model.Qpv[g, t].value for g in model.G}
         solution['ESS Charging'][t] = {k: model.Pesc[k, t].value for k in model.K}
         solution['ESS Discharging'][t] = {k: model.Pesd[k, t].value for k in model.K}
-        solution['Voltage'][t] = {n: model.V[n, t].value for n in model.N}
+        solution['Voltage Squared'][t] = {n: model.Vsqr[n, t].value for n in model.N}
         solution['Active Power Flow'][t] = {(i, j): model.Pl[i, j, t].value for (i, j) in model.L}
         solution['Reactive Power Flow'][t] = {(i, j): model.Ql[i, j, t].value for (i, j) in model.L}
-        solution['Current'][t] = {(i, j): model.I[i, j, t].value for (i, j) in model.L}
+        solution['Current Squared'][t] = {(i, j): model.Isqr[i, j, t].value for (i, j) in model.L}
         solution['ESS Energy'][t] = {k: model.E[k, t].value for k in model.K}
+        solution['Charging Indicator'][t] = {k: model.charging_indicator[k, t].value for k in model.K}
+        solution['Active Power Load'][t] = {n: model.Pload[n, t] for n in model.N}
+        solution['Reactive Power Load'][t] = {n: model.Qload[n, t] for n in model.N}
+        solution['PV Active Power'][t] = {g: model.Ppv[g, t] for g in model.G}
 
     return solution
 
