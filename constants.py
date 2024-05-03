@@ -3,8 +3,8 @@ LINES_PATH = 'Lines_33.xlsx'
 
 V_NOM = 12.66  # kV
 S_NOM = 1000  # kVA
-V_MIN = 0.95  # pu
-V_MAX = 1.05 # pu
+V_MIN = 0.9  # pu
+V_MAX = 1.1 # pu
 
 BUILDINGS = [5, 10, 15, 20, 25] 
 PV_NODES = [5, 10, 15, 20, 25] 
@@ -15,6 +15,8 @@ PV_CAPACITY = 50 / S_NOM
 T = 24
 
 MAX_POWER_REDUCTION_PERCENT = 0.50  # 50% reduction
+
+COS_PHIMAX = 0.95 # Maximum power factor
 
 FLEX_PRICE = {i: 0.20 if 17 <= i <= 21 else 0.10 for i in range(1, 25)} # Flexibility price ($/kWh)
 PV_COST = {der: 0.05 for der in PV_NODES} # Cost of reactive power control of each PV ($/kWh)

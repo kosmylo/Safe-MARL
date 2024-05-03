@@ -9,10 +9,8 @@ def create_network():
 
     # Process node data
     nodes = list(nodes_data.loc[i, 'NODES'] for i in nodes_data.index)
-    print(nodes)
     node_types = {nodes_data.loc[i, 'NODES']: nodes_data.loc[i, 'Tb'] for i in nodes_data.index}
     p_demand = {nodes_data.loc[i, 'NODES']: nodes_data.loc[i, 'PDn'] / S_NOM for i in nodes_data.index}
-    print(p_demand)
     q_demand = {nodes_data.loc[i, 'NODES']: nodes_data.loc[i, 'QDn'] / S_NOM for i in nodes_data.index}
 
     # Process line data
