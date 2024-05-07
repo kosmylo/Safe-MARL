@@ -20,7 +20,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power Reduction (kW)')
     plt.legend()
-    plt.savefig('Power_Reduction_by_Buildings.png')
+    plt.savefig('plots/Power_Reduction_by_Buildings.png')
 
     # Plot Reactive Power Provided by PVs
     plt.figure(figsize=(10, 6))
@@ -30,7 +30,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Reactive Power (kVar)')
     plt.legend()
-    plt.savefig('Reactive_Power_Provided_by_PVs.png')
+    plt.savefig('plots/Reactive_Power_Provided_by_PVs.png')
     plt.close()
 
     # Plot ESS Charging
@@ -41,7 +41,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
     plt.legend()
-    plt.savefig('ESS_Charging_Power.png')
+    plt.savefig('plots/ESS_Charging_Power.png')
 
     # Plot ESS Discharging
     plt.figure(figsize=(10, 6))
@@ -51,7 +51,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
     plt.legend()
-    plt.savefig('ESS_Discharging_Power.png')
+    plt.savefig('plots/ESS_Discharging_Power.png')
 
     # Plot ESS Charging Indicator
     plt.figure(figsize=(10, 6))
@@ -61,7 +61,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Charging Indicator (0 or 1)')
     plt.legend()
-    plt.savefig('ESS_Charging_Indicator.png')
+    plt.savefig('plots/ESS_Charging_Indicator.png')
     plt.close()
 
     # Plot Voltage Profiles
@@ -72,7 +72,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Voltage (p.u.)')
     plt.legend()
-    plt.savefig('Voltage_at_Buses.png')
+    plt.savefig('plots/Voltage_at_Buses.png')
 
     # Plot Active Power Load
     plt.figure(figsize=(10, 6))
@@ -82,7 +82,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
     plt.legend()
-    plt.savefig('Active_Power_Load.png')
+    plt.savefig('plots/Active_Power_Load.png')
     plt.close()
 
     # Plot Reactive Power Load
@@ -93,7 +93,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kVar)')
     plt.legend()
-    plt.savefig('Reactive_Power_Load.png')
+    plt.savefig('plots/Reactive_Power_Load.png')
     plt.close()
 
     # Plot Active Power from PVs
@@ -104,7 +104,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
     plt.legend()
-    plt.savefig('Active_Power_from_PVs.png')
+    plt.savefig('plots/Active_Power_from_PVs.png')
     plt.close()
 
     # Plot Active Power Flow
@@ -115,7 +115,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
     plt.legend()
-    plt.savefig('Active_Power_Flow_on_Lines.png')
+    plt.savefig('plots/Active_Power_Flow_on_Lines.png')
 
     # Plot Reactive Power Flow
     plt.figure(figsize=(10, 6))
@@ -125,7 +125,7 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Power (kVar)')
     plt.legend()
-    plt.savefig('Reactive_Power_Flow_on_Lines.png')
+    plt.savefig('plots/Reactive_Power_Flow_on_Lines.png')
 
     # Plot Currents on Lines
     plt.figure(figsize=(10, 6))
@@ -135,4 +135,4 @@ def plot_optimization_results(results):
     plt.xlabel('Time')
     plt.ylabel('Current (pu)')
     plt.legend()
-    plt.savefig('Current_Flow_on_Lines.png')
+    plt.savefig('plots/Current_Flow_on_Lines.png')
