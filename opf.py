@@ -69,7 +69,11 @@ def opf_model(network_data):
 
     # Define Objective Function
     def objective_rule(model):
-        return sum(model.lambda_flex[t] * model.Pred[b, t] - model.cost_pv[g] * model.Qpv[g, t] - model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) - model.discomfort[b] * model.Pred[b, t] for b in model.B for k in model.K for g in model.G for t in model.T)
+        return sum(model.lambda_flex[t] * model.Pred[b, t] - 
+                   model.cost_pv[g] * model.Qpv[g, t] - 
+                   model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) - 
+                   sum(model.R[i, j] * model.Isqr[i, j, t] for (i, j) in model.L) -
+                   model.discomfort[b] * model.Pred[b, t] for b in model.B for k in model.K for g in model.G for t in model.T)
     model.obj = pyo.Objective(rule=objective_rule, sense=pyo.maximize)    
 
     # Define Constraints
@@ -135,7 +139,7 @@ def opf_model(network_data):
     model.no_simultaneous_discharge = pyo.Constraint(model.K, model.T, rule=no_simultaneous_discharge_rule)
 
     # Solve the model
-    solver = SolverFactory('mindtpy')
+    solver = SolverFactory('gurobi')
     result = solver.solve(model, tee=False)
     
     if result.solver.status != pyo.SolverStatus.ok:
