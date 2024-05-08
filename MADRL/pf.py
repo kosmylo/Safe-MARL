@@ -4,6 +4,8 @@ from OPF.constants import ETA_CH, ETA_DIS
 import numpy as np
 
 def power_flow_solver(network_data, active_power_demand, reactive_power_demand, power_reduction, pv_active_power, pv_reactive_power, ess_charging, ess_discharging, initial_ess_energy):
+    
+    # Define the model
     model = pyo.ConcreteModel()
 
     # Define Sets

@@ -12,24 +12,24 @@ logger = logging.getLogger(__name__)
 network_data = create_network()
 
 # Example Active and Reactive Power Demand in pu
-active_power_demand = {node: 0.1 for node in network_data['bus_numbers']}  # 10% of S_NOM
-reactive_power_demand = {node: 0.05 for node in network_data['bus_numbers']}  # 5% of S_NOM
+active_power_demand = {node: 0 if network_data['bus_types'][node] == 1 else 0.1 for node in network_data['bus_numbers']}
+reactive_power_demand = {node: 0 if network_data['bus_types'][node] == 1 else 0.005 for node in network_data['bus_numbers']}
 
 # Active Power Reduction capabilities at some buildings (Demand Response) in pu
 power_reduction = {node: active_power_demand[node] * MAX_POWER_REDUCTION_PERCENT for node in BUILDINGS}
 
 # Photovoltaic Power Generation at certain buses in pu
-pv_power = {node: PV_CAPACITY for node in PV_NODES}
+pv_power = {node: 0.5 * PV_CAPACITY for node in PV_NODES}
 
 # Photovoltaic Reactive Power Generation (if applicable) in pu
-pv_reactive_power = {node: pv_power[node] * 0.1 for node in PV_NODES}  # Assuming 10% of PV power can be reactive
+pv_reactive_power = {node: 0 for node in PV_NODES} 
 
 # Energy Storage System Charging and Discharging Power in pu
 ess_charging = {node: P_CH_MAX for node in ESS_NODES}
 ess_discharging = {node: 0 for node in ESS_NODES}
 
 # Initial Energy Content of Energy Storage Systems in pu
-initial_ess_energy = {node: E_MAX / 2 for node in ESS_NODES}  # Initial state halfway to E_MAX
+initial_ess_energy = {node: E_MAX / 2 for node in ESS_NODES}  
 
 # Execute the power flow solver
 results = power_flow_solver(network_data, active_power_demand, reactive_power_demand, power_reduction, pv_power, pv_reactive_power, ess_charging, ess_discharging, initial_ess_energy)
