@@ -1,7 +1,7 @@
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
 from math import acos, tan
-from constants import T, V_MIN, V_MAX, FLEX_PRICE, PV_COST, ESS_COST, DISCOMFORT_COEFF, ETA_CH, ETA_DIS, LOAD_PROFILE, PV_CAPACITY, COS_PHIMAX, PV_PROFILE, MAX_POWER_REDUCTION_PERCENT, E_MIN, E_MAX, P_CH_MAX, P_DIS_MAX
+from OPF.constants import T, V_MIN, V_MAX, FLEX_PRICE, PV_COST, ESS_COST, DISCOMFORT_COEFF, ETA_CH, ETA_DIS, LOAD_PROFILE, PV_CAPACITY, COS_PHIMAX, PV_PROFILE, MAX_POWER_REDUCTION_PERCENT, E_MIN, E_MAX, P_CH_MAX, P_DIS_MAX
 import logging
 
 logger = logging.getLogger(__name__)
@@ -77,17 +77,16 @@ def opf_model(network_data):
     model.obj = pyo.Objective(rule=objective_rule, sense=pyo.maximize)    
 
     # Define Constraints
-
     def active_power_flow_rule(model, n, t):
         # Sum of outgoing power - Sum of incoming power + generation - load = 0 at each bus
         return (sum(model.Pl[i, j, t] for (i, j) in model.L if j == n) -
                 sum(model.Pl[i, j, t] + model.R[i, j] * model.Isqr[i, j, t] for (i, j) in model.L if i == n) +
                 sum(model.Pesd[k, t] for k in model.K if k == n) -  
-                sum(model.Pesc[k, t] for k in model.K if k == n) -  
-                sum(model.Pred[b, t] for b in model.B if b == n) -  
+                sum(model.Pesc[k, t] for k in model.K if k == n) +  
                 sum(model.Ppv[g, t] for g in model.G if g == n) +
                 model.Ps[n, t] -
-                model.Pload[n, t] == 0)
+                model.Pload[n, t] +
+                sum(model.Pred[b, t] for b in model.B if b == n)  == 0)
     model.active_power_flow = pyo.Constraint(model.N, model.T, rule=active_power_flow_rule)
 
     def reactive_power_flow_rule(model, n, t):

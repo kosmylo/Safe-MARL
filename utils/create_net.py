@@ -1,5 +1,5 @@
 import pandas as pd
-from constants import NODES_PATH, LINES_PATH, V_NOM, S_NOM, BUILDINGS, PV_NODES, ESS_NODES
+from OPF.constants import NODES_PATH, LINES_PATH, V_NOM, S_NOM, BUILDINGS, PV_NODES, ESS_NODES
 
 def create_network():
 
