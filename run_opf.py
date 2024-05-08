@@ -1,6 +1,6 @@
-from create_net import create_network
-from opf import opf_model
-from plot_res import plot_optimization_results
+from utils.create_net import create_network
+from OPF.opf import opf_model
+from OPF.plot_res import plot_optimization_results
 import logging
 
 # Configure the logger
