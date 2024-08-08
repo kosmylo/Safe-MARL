@@ -1,7 +1,7 @@
 from utils.create_net import create_network
 from OPF.constants import BUILDINGS, PV_NODES, ESS_NODES, PV_CAPACITY, E_MAX, P_CH_MAX, P_DIS_MAX, MAX_POWER_REDUCTION_PERCENT
-from MADRL.pf import power_flow_solver
-from MADRL.plot_res import plot_power_flow_results
+from PF.pf import power_flow_solver
+from PF.plot_res import plot_power_flow_results
 import logging
 
 # Configure the logger

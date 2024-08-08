@@ -1,5 +1,5 @@
-NODES_PATH = 'Data/Nodes_33.xlsx'
-LINES_PATH = 'Data/Lines_33.xlsx'
+NODES_PATH = 'data/Nodes_33.xlsx'
+LINES_PATH = 'data/Lines_33.xlsx'
 
 V_NOM = 12.66  # kV
 S_NOM = 1000  # kVA
