@@ -161,3 +161,4 @@ cython_debug/
 
 model_save/*
 tensorboard/*
+data/*
