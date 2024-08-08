@@ -78,7 +78,7 @@ def plot_optimization_results(results):
     plt.ylabel('Voltage (p.u.)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Voltage_at_Buses.png')
+    plt.savefig('plots/run_opf_results/Voltage_at_Buses.png')
 
     # Plot Active Power Load
     plt.figure(figsize=(10, 6))
@@ -89,7 +89,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Active_Power_Load.png')
+    plt.savefig('plots/run_opf_results/Active_Power_Load.png')
     plt.close()
 
     # Plot Reactive Power Load
@@ -101,7 +101,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Reactive_Power_Load.png')
+    plt.savefig('plots/run_opf_results/Reactive_Power_Load.png')
     plt.close()
 
     # Plot Active Power from PVs
@@ -113,7 +113,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Active_Power_from_PVs.png')
+    plt.savefig('plots/run_opf_results/Active_Power_from_PVs.png')
     plt.close()
 
     # Plot Active Power Flow
@@ -125,7 +125,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Active_Power_Flow_on_Lines.png')
+    plt.savefig('plots/run_opf_results/Active_Power_Flow_on_Lines.png')
 
     # Plot Reactive Power Flow
     plt.figure(figsize=(10, 6))
@@ -136,7 +136,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Reactive_Power_Flow_on_Lines.png')
+    plt.savefig('plots/run_opf_results/Reactive_Power_Flow_on_Lines.png')
 
     # Plot Currents on Lines
     plt.figure(figsize=(10, 6))
@@ -147,4 +147,4 @@ def plot_optimization_results(results):
     plt.ylabel('Current (pu)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('OPF/plots/Current_Flow_on_Lines.png')
+    plt.savefig('plots/run_opf_results/Current_Flow_on_Lines.png')

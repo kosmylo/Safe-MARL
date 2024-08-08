@@ -1,65 +1,95 @@
 import matplotlib.pyplot as plt
+from MADRL.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
 import numpy as np
+import yaml
 from OPF.constants import S_NOM
+import logging
 
-def plot_power_flow_results(results):
-    # Plot Voltage Profiles at Buses
+# Configure the logger
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Function to plot results
+def plot_results(active_demand, reactive_demand, pv_power, voltages, prices, ess_energy, rewards):
+    timesteps = range(len(active_demand))
+
+    # Active Power Demand
     plt.figure(figsize=(10, 6))
-    voltages = results['Voltages']
-    buses = voltages.keys()
-    voltage_values = [np.sqrt(voltage) for voltage in voltages.values()]
-    plt.plot(buses, voltage_values, 'o-', label='Voltage (p.u.)')
-    plt.title('Voltage Profile Across Buses')
-    plt.xlabel('Bus Number')
+    for bus_id in active_demand[0].keys():
+        plt.plot(timesteps, [ad[bus_id] for ad in active_demand], label=f'Bus {bus_id}')
+    plt.title('Active Power Demand Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Active Power Demand (p.u.)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/Active_Power_Demand.png')
+    plt.close()
+
+    # Reactive Power Demand
+    plt.figure(figsize=(10, 6))
+    for bus_id in reactive_demand[0].keys():
+        plt.plot(timesteps, [rd[bus_id] for rd in reactive_demand], label=f'Bus {bus_id}')
+    plt.title('Reactive Power Demand Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Reactive Power Demand (p.u.)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/Reactive_Power_Demand.png')
+    plt.close()
+
+    # PV Power
+    plt.figure(figsize=(10, 6))
+    for i, bus_id in enumerate(pv_power[0].keys()):
+        plt.plot(timesteps, [pv[bus_id] for pv in pv_power], label=f'PV {bus_id}')
+    plt.title('PV Power Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('PV Power (p.u.)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/PV_Power.png')
+    plt.close()
+
+    # Voltage Profile
+    plt.figure(figsize=(10, 6))
+    for bus_id in voltages[0].keys():
+        plt.plot(timesteps, [v[bus_id] for v in voltages], label=f'Bus {bus_id}')
+    plt.title('Voltage Profile Over Time')
+    plt.xlabel('Time Step')
     plt.ylabel('Voltage (p.u.)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('MADRL/plots/pf_results/Voltage_Profile.png')
+    plt.savefig('plots/run_env_results/Voltage_Profile.png')
     plt.close()
 
-    # Plot Currents on Lines
+    # Prices
     plt.figure(figsize=(10, 6))
-    currents = results['Currents']
-    lines = [f'{line[0]}-{line[1]}' for line in currents.keys()]
-    current_values = [np.sqrt(current) for current in currents.values()]
-    plt.plot(lines, current_values, 'o-', label='Current on Lines')
-    plt.title('Current Flow on Lines')
-    plt.xlabel('Line')
-    plt.ylabel('Current (p.u.)')
-    plt.xticks(rotation=45)
+    plt.plot(timesteps, prices, label='Price')
+    plt.title('Price Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Price')
     plt.grid(True)
     plt.legend()
-    plt.tight_layout()
-    plt.savefig('MADRL/plots/pf_results/Current_Flow.png')
+    plt.savefig('MADRL/plots/run_env_results/Price.png')
     plt.close()
 
-    # Plot Active and Reactive Power Flows on Lines
+    # ESS Energy
     plt.figure(figsize=(10, 6))
-    power_flows = results['Power Flows']
-    lines = [f'{line[0]}-{line[1]}' for line in power_flows.keys()]
-    p_flows = [p_flow * S_NOM for p_flow, q_flow in power_flows.values()]
-    q_flows = [q_flow * S_NOM for p_flow, q_flow in power_flows.values()]
-    plt.plot(lines, p_flows, 'o-', label='Active Power (kW)')
-    plt.plot(lines, q_flows, 'x-', label='Reactive Power (kVar)')
-    plt.title('Power Flows on Lines')
-    plt.xlabel('Line')
-    plt.ylabel('Power (kW, kVar)')
-    plt.xticks(rotation=45)  # Rotate labels to avoid collision
+    for ess_id in ess_energy[0].keys():
+        plt.plot(timesteps, [e[ess_id] for e in ess_energy], label=f'ESS {ess_id}')
+    plt.title('ESS Energy Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Energy (p.u.)')
     plt.grid(True)
     plt.legend()
-    plt.tight_layout()  # Adjust layout to give enough space for label rotation
-    plt.savefig('MADRL/plots/pf_results/Power_Flows.png')
+    plt.savefig('MADRL/plots/run_env_results/ESS_Energy.png')
     plt.close()
 
-    # Plot Next Energy State of ESS
+    # Cumulative Reward
     plt.figure(figsize=(10, 6))
-    ess_energy = results['Next ESS Energy']
-    ess_ids = ess_energy.keys()
-    plt.bar(ess_ids, [ess_energy[ess] * S_NOM for ess in ess_ids], color='blue', label='Next ESS Energy (kWh)')
-    plt.title('Next Energy State of ESS')
-    plt.xlabel('ESS ID')
-    plt.ylabel('Energy (kWh)')
+    plt.plot(timesteps, rewards, 'o-')
+    plt.title('Cumulative Reward Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Cumulative Reward')
     plt.grid(True)
-    plt.legend()
-    plt.savefig('MADRL/plots/pf_results/Next_ESS_Energy.png')
+    plt.savefig('MADRL/plots/run_env_results/Cumulative_Reward.png')
     plt.close()

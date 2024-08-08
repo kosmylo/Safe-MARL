@@ -1,0 +1,27 @@
+env: "flexibility_provision"
+
+env_args:
+    history: 1
+    pv_scale: 0.05
+    demand_scale: 1.0
+    reactive_scale: 0.8
+    v_max: 1.1 # in pu
+    v_min: 0.9 # in pu
+    data_path: "./data"
+    episode_limit: 24 # in time intervals
+    action_low: 0
+    action_high: 1.0
+    seed: 0
+    e_min: 0 # in pu
+    e_max: 0.025 # in pu
+    pv_cost: 0.5
+    ess_cost: 0.5
+    discomfort_coeff: 0.5
+    voltage_coeff: 1.0
+    p_ch_max: 0.005 # in pu
+    p_dis_max: 0.005 # in pu
+    eta_ch: 0.9
+    eta_dis: 0.9 
+    cos_phi_max: 0.95
+    max_power_reduction: 0.5 
+    sample_interval: "1h" # '3min', '15min', '1h'
