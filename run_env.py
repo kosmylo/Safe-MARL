@@ -1,5 +1,5 @@
 from MADRL.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
-from MADRL.plot_res import plot_results
+from utils.plot_res import plot_environment_results
 import numpy as np
 import yaml
 import os
@@ -118,6 +118,6 @@ for e in range(n_episodes):
     logger.info(f"Total reward in episode {e} = {episode_reward:.2f}")
 
     # Plot results
-    plot_results(all_active_demand, all_reactive_demand, all_pv_power, all_voltages, all_prices, all_ess_energy, rewards)
+    plot_environment_results(all_active_demand, all_reactive_demand, all_pv_power, all_voltages, all_prices, all_ess_energy, rewards)
 
 env.close()

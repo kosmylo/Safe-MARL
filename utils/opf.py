@@ -1,18 +1,22 @@
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
 from math import acos, tan
-from OPF.constants import T, V_MIN, V_MAX, FLEX_PRICE, PV_COST, ESS_COST, DISCOMFORT_COEFF, ETA_CH, ETA_DIS, LOAD_PROFILE, PV_CAPACITY, COS_PHIMAX, PV_PROFILE, MAX_POWER_REDUCTION_PERCENT, E_MIN, E_MAX, P_CH_MAX, P_DIS_MAX
+import yaml
 import logging
 
 logger = logging.getLogger(__name__)
 
-def opf_model(network_data):
+# load env args
+with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+    env_config_dict = yaml.safe_load(f)["env_args"]
+
+def opf_model(network_data, flex_price, active_power_demand, reactive_power_demand, pv_active_power, initial_ess_energy):
 
     # Define the model
     model = pyo.ConcreteModel()
 
     # Define Sets
-    model.T = pyo.RangeSet(1, T)  # Time periods
+    model.T = pyo.RangeSet(1, env_config_dict['episode_limit'])  # Time periods
     model.N = pyo.Set(initialize=network_data['bus_numbers']) # Buses
     model.L = pyo.Set(initialize=network_data['line_connections'])  # Lines
     model.B = pyo.Set(initialize=network_data['buildings'])  # Buildings with flexibility
@@ -22,23 +26,24 @@ def opf_model(network_data):
     # Define Parameters
     model.R = pyo.Param(model.L, initialize=network_data['line_resistances']) # Resistance of each line
     model.X = pyo.Param(model.L, initialize=network_data['line_reactances']) # Reactance of each line
-    model.Vmin = pyo.Param(initialize=V_MIN)  # Minimum voltage at each bus
-    model.Vmax = pyo.Param(initialize=V_MAX)  # Maximum voltage at each bus
+    model.Vmin = pyo.Param(initialize=env_config_dict['v_min'])  # Minimum voltage at each bus
+    model.Vmax = pyo.Param(initialize=env_config_dict['v_max'])  # Maximum voltage at each bus
     model.Imax = pyo.Param(model.L, initialize=network_data['max_line_currents'])  # Max capacity of each line
-    model.lambda_flex = pyo.Param(model.T, initialize=FLEX_PRICE)  # Price of flexibility per time period
-    model.cost_pv = pyo.Param(model.G, initialize=PV_COST)  # Cost of reactive power control of each PV
-    model.cost_ess = pyo.Param(model.K, initialize=ESS_COST)  # Cost of operating each ESS
-    model.discomfort = pyo.Param(model.B, initialize=DISCOMFORT_COEFF)  # Discomfort coefficient
-    model.eta_ch = pyo.Param(model.K, initialize=ETA_CH)
-    model.eta_dis = pyo.Param(model.K, initialize=ETA_DIS)
-    model.Pload = pyo.Param(model.N, model.T, initialize=lambda model, n, t: network_data['active_power_demand'][n] * LOAD_PROFILE[t-1])
-    model.Qload = pyo.Param(model.N, model.T, initialize=lambda model, n, t: network_data['reactive_power_demand'][n] * LOAD_PROFILE[t-1])
-    model.Ppv = pyo.Param(model.G, model.T, initialize=lambda model, g, t: PV_CAPACITY * PV_PROFILE[t-1])
-    model.Pred_max = pyo.Param(model.B, model.T, initialize=lambda model, b, t: network_data['active_power_demand'][b] * LOAD_PROFILE[t-1] * MAX_POWER_REDUCTION_PERCENT)
-    model.Emin = pyo.Param(initialize=E_MIN)
-    model.Emax = pyo.Param(initialize=E_MAX)
-    model.Pch_max = pyo.Param(initialize=P_CH_MAX)
-    model.Pdis_max = pyo.Param(initialize=P_DIS_MAX)
+    model.lambda_flex = pyo.Param(model.T, initialize=flex_price)  # Price of flexibility per time period
+    model.cost_pv = pyo.Param(model.G, initialize=env_config_dict['pv_cost'])  # Cost of reactive power control of each PV
+    model.cost_ess = pyo.Param(model.K, initialize=env_config_dict['ess_cost'])  # Cost of operating each ESS
+    model.discomfort = pyo.Param(model.B, initialize=env_config_dict['discomfort_coeff'])  # Discomfort coefficient
+    model.eta_ch = pyo.Param(model.K, initialize=env_config_dict['eta_ch'])
+    model.eta_dis = pyo.Param(model.K, initialize=env_config_dict['eta_dis'])
+    model.Pload = pyo.Param(model.N, model.T, initialize=lambda model, n, t: active_power_demand[n][t-1])
+    model.Qload = pyo.Param(model.N, model.T, initialize=lambda model, n, t: reactive_power_demand[n][t-1])
+    model.Ppv = pyo.Param(model.G, model.T, initialize=lambda model, g, t: pv_active_power[g][t-1])
+    model.Pred_max = pyo.Param(model.B, model.T, initialize=lambda model, b, t: active_power_demand[b][t-1] * env_config_dict['max_power_reduction'])
+    model.Emin = pyo.Param(initialize=env_config_dict['e_min'])  # Minimum energy of the ESS
+    model.Emax = pyo.Param(initialize=env_config_dict['e_max']) # Maximum energy of the ESS
+    model.Pch_max = pyo.Param(initialize=env_config_dict['p_ch_max']) # Maximum charging power of the ESS
+    model.Pdis_max = pyo.Param(initialize=env_config_dict['p_dis_max']) # Maximum discharging power of the ESS
+    model.E_init = pyo.Param(model.K, initialize=initial_ess_energy)  # Initial ESS energy state
 
     # Define Variables
     model.Pred = pyo.Var(model.B, model.T, within=pyo.NonNegativeReals, bounds=lambda model, b, t: (0, model.Pred_max[b, t]))  # Power reduction by building
@@ -98,7 +103,7 @@ def opf_model(network_data):
     model.reactive_power_flow = pyo.Constraint(model.N, model.T, rule=reactive_power_flow_rule)
 
     def Qpv_constraint_rule(model, g, t):
-        return (-tan(acos(COS_PHIMAX)) * model.Ppv[g, t], model.Qpv[g, t], tan(acos(COS_PHIMAX)) * model.Ppv[g, t])
+        return (-tan(acos(env_config_dict['cos_phi_max'])) * model.Ppv[g, t], model.Qpv[g, t], tan(acos(env_config_dict['cos_phi_max'])) * model.Ppv[g, t])
     model.Qpv_control = pyo.Constraint(model.G, model.T, rule=Qpv_constraint_rule)
 
     def voltage_drop_rule(model, i, j, t):
@@ -120,8 +125,8 @@ def opf_model(network_data):
 
     def ess_energy_balance_rule(model, k, t):
         if t == 1:
-            # Assume initial energy content set to E_min 
-            return model.E[k, t] ==  model.Emin
+            # Assume initial energy content set to initial_ess_energy
+            return model.E[k, t] ==  model.E_init[k]
         else:
             # Energy at time t based on the energy at time t-1 plus net energy changes
             return (model.E[k, t] == model.E[k, t-1] + 
