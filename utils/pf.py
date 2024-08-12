@@ -1,7 +1,11 @@
 import pyomo.environ as pyo
 from pyomo.opt import SolverFactory
-from OPF.constants import ETA_CH, ETA_DIS
+import yaml
 import numpy as np
+
+# load env args
+with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+    env_config_dict = yaml.safe_load(f)["env_args"]
 
 def power_flow_solver(network_data, active_power_demand, reactive_power_demand, power_reduction, pv_active_power, pv_reactive_power, ess_charging, ess_discharging, initial_ess_energy):
     
@@ -25,8 +29,8 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
     model.Qpv = pyo.Param(model.G, initialize=pv_reactive_power)  # PV reactive power generation
     model.Pesc = pyo.Param(model.K, initialize=ess_charging)  # Power charged to ESS
     model.Pesd = pyo.Param(model.K, initialize=ess_discharging)  # Power discharged from ESS
-    model.eta_ch = pyo.Param(model.K, initialize=ETA_CH) # Charging efficiency of ESS
-    model.eta_dis = pyo.Param(model.K, initialize=ETA_DIS) # Discharging efficiency of ESS
+    model.eta_ch = pyo.Param(model.K, initialize=env_config_dict['eta_ch']) # Charging efficiency of ESS
+    model.eta_dis = pyo.Param(model.K, initialize=env_config_dict['eta_dis']) # Discharging efficiency of ESS
     model.E_init = pyo.Param(model.K, initialize=initial_ess_energy)  # Initial ESS energy state
 
     # Define Variables
