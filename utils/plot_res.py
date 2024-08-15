@@ -229,7 +229,9 @@ def plot_power_flow_results(results):
     plt.close()
 
 # Function to plot environment results
-def plot_environment_results(active_demand, reactive_demand, pv_power, voltages, prices, ess_energy, rewards):
+def plot_environment_results(active_demand, reactive_demand, pv_power, voltages, 
+                             prices, ess_energy, rewards, percentage_reduction, ess_charging, ess_discharging, q_pv):
+    
     timesteps = range(len(active_demand))
 
     # Active Power Demand
@@ -311,4 +313,53 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Cumulative Reward (Euros)')
     plt.grid(True)
     plt.savefig('plots/run_env_results/Cumulative_Reward.png')
+    plt.close()
+
+    # Plot Percentage Reduction
+    plt.figure(figsize=(10, 6))
+    for building in percentage_reduction[0].keys():
+        plt.plot(timesteps, [pr[building] * env_config_dict['s_nom'] * active_demand[t][building]for t, pr in enumerate(percentage_reduction)], 
+                 label=f'Building {building}')
+    plt.title('Power Reduction Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Power Reduction (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/Power_Reduction.png')
+    plt.close()
+
+    # Plot ESS Charging
+    plt.figure(figsize=(10, 6))
+    for ess in ess_charging[0].keys():
+        plt.plot(timesteps, [ch[ess] * env_config_dict['s_nom'] for ch in ess_charging], label=f'ESS {ess} Charging')
+    plt.title('ESS Charging Power Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Charging Power (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/ESS_Charging.png')
+    plt.close()
+
+    # Plot ESS Discharging
+    plt.figure(figsize=(10, 6))
+    for ess in ess_discharging[0].keys():
+        plt.plot(timesteps, [dch[ess] * env_config_dict['s_nom'] for dch in ess_discharging], label=f'ESS {ess} Discharging')
+    plt.title('ESS Discharging Power Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Discharging Power (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/ESS_Discharging.png')
+    plt.close()
+
+    # Plot Reactive Power of PVs
+    plt.figure(figsize=(10, 6))
+    for pv in q_pv[0].keys():
+        plt.plot(timesteps, [q[pv] * env_config_dict['s_nom'] for q in q_pv], label=f'PV {pv} Reactive Power')
+    plt.title('PV Reactive Power Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Reactive Power (kVar)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/run_env_results/PV_Reactive_Power.png')
     plt.close()

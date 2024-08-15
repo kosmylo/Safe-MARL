@@ -46,6 +46,12 @@ for e in range(n_episodes):
     max_steps = 24
     episode_reward = 0
 
+    # Initialize lists to store real action values for each timestep
+    all_percentage_reduction = []
+    all_ess_charging = []
+    all_ess_discharging = []
+    all_q_pv = []
+
     # Initialize lists to store results for each timestep
     all_active_demand = []
     all_reactive_demand = []
@@ -59,9 +65,6 @@ for e in range(n_episodes):
         obs = env.get_obs()
         state = env.get_state()
 
-        # Log the state for inspection
-        logger.info(f"State at timestep {t}: {state}")
-
         actions = []
         for agent_id in range(n_agents):
             avail_actions = env.get_avail_agent_actions(agent_id)
@@ -72,13 +75,23 @@ for e in range(n_episodes):
 
         actions = np.concatenate(actions, axis=0)
 
-        logger.info(f"Actions at timestep {t}: {actions}")
-            
-        reward, _, info = env.step(actions)
+        reward, _, info  = env.step(actions)
 
         episode_reward += reward
 
         rewards.append(episode_reward)
+
+        # Accessing the values directly from the environment's state
+        percentage_reduction = env.percentage_reduction
+        ess_charging = env.ess_charging
+        ess_discharging = env.ess_discharging
+        q_pv = env.q_pv
+
+        # Append the processed action values to the respective lists
+        all_percentage_reduction.append(percentage_reduction)
+        all_ess_charging.append(ess_charging)
+        all_ess_discharging.append(ess_discharging)
+        all_q_pv.append(q_pv)
 
         # Extract and store results from the state
         num_buses = len(env.base_powergrid['bus_numbers'])
@@ -106,18 +119,33 @@ for e in range(n_episodes):
         all_prices.append(prices)
         all_ess_energy.append(ess_energy)
 
-        # Log the extracted values
-        logger.info(f"Active Demand at timestep {t}: {active_demand}")
-        logger.info(f"Reactive Demand at timestep {t}: {reactive_demand}")
-        logger.info(f"PV Power at timestep {t}: {pv_power}")
-        logger.info(f"Voltages at timestep {t}: {voltages}")
-        logger.info(f"Prices at timestep {t}: {prices}")
-        logger.info(f"ESS Energy at timestep {t}: {ess_energy}")
+        # Log the real values inside the logger.info() calls
+        logger.info(f"Real Active Demand at timestep {t} (kW): "
+                    f"{ {bus: active_demand[bus] * env_config_dict['s_nom'] for bus in active_demand} }")
+        logger.info(f"Real Reactive Demand at timestep {t} (kVar): "
+                    f"{ {bus: reactive_demand[bus] * env_config_dict['s_nom'] for bus in reactive_demand} }")
+        logger.info(f"Real PV Power at timestep {t} (kW): "
+                    f"{ {pv: pv_power[pv] * env_config_dict['s_nom'] for pv in pv_power} }")
+        logger.info(f"Voltages at timestep {t} (pu): {voltages}")
+        logger.info(f"Prices at timestep {t} (Euros/kWh): {prices}")
+        logger.info(f"ESS Energy at timestep {t} (kWh): "
+                    f"{ {ess: ess_energy[ess] * env_config_dict['s_nom'] for ess in ess_energy} }")
+        logger.info(f"Power Reduction at timestep {t} (kW): "
+                    f"{ {building: percentage_reduction[building] * active_demand[building] * env_config_dict['s_nom'] for building in percentage_reduction} }")
+        logger.info(f"ESS Charging at timestep {t} (kW): "
+                    f"{ {ess: ess_charging[ess] * env_config_dict['s_nom'] for ess in ess_charging} }")
+        logger.info(f"ESS Discharging at timestep {t} (kW): "
+                    f"{ {ess: ess_discharging[ess] * env_config_dict['s_nom'] for ess in ess_discharging} }")
+        logger.info(f"Reactive Power from PV at timestep {t} (kVar): "
+                    f"{ {pv: q_pv[pv] * env_config_dict['s_nom'] for pv in q_pv} }")
         logger.info(f"Reward at timestep {t}: {reward}")
     
     logger.info(f"Total reward in episode {e} = {episode_reward:.2f}")
-
+    
     # Plot results
-    plot_environment_results(all_active_demand, all_reactive_demand, all_pv_power, all_voltages, all_prices, all_ess_energy, rewards)
+    plot_environment_results(all_active_demand, all_reactive_demand, all_pv_power, 
+                             all_voltages, all_prices, all_ess_energy, rewards, all_percentage_reduction, 
+                             all_ess_charging, all_ess_discharging, all_q_pv
+                             )
 
 env.close()
