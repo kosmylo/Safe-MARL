@@ -91,41 +91,31 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
     def step(self, actions):
         num_buildings = len(self.base_powergrid['buildings'])
         
-        percentage_reduction = {self.base_powergrid['buildings'][i]: actions[i] for i in range(num_buildings)}
-        ess_charging = {self.base_powergrid['ESSs_at_buildings'][i]: actions[num_buildings + i] for i in range(num_buildings)}
-        ess_discharging = {self.base_powergrid['ESSs_at_buildings'][i]: actions[2 * num_buildings + i] for i in range(num_buildings)}
-        q_pv = {self.base_powergrid['PVs_at_buildings'][i]: actions[3 * num_buildings + i] for i in range(num_buildings)}
+        # Scale actions based on the provided env_args
+        percentage_reduction = {self.base_powergrid['buildings'][i]: self.args.max_power_reduction * actions[i] for i in range(num_buildings)}
+        ess_charging = {self.base_powergrid['ESSs_at_buildings'][i]: self.args.p_ch_max * actions[num_buildings + i] for i in range(num_buildings)}
+        ess_discharging = {self.base_powergrid['ESSs_at_buildings'][i]: self.args.p_dis_max * actions[2 * num_buildings + i] for i in range(num_buildings)}
+        # q_pv = {self.base_powergrid['PVs_at_buildings'][i]: actions[3 * num_buildings + i] for i in range(num_buildings)}
+
+        # Compute the current active power for PVs
+        pv_active_power = {g: self.current_pv_power[g] for g in self.base_powergrid['PVs_at_buildings']}
 
         # Clip the power reduction percentages to be within the allowed range
         percentage_reduction = self.clip_percentage_reduction(percentage_reduction)
+        
         # Compute power reduction based on active power demand and percentage reduction
         power_reduction = {building: self.current_active_demand[building] * percentage_reduction[building] for building in self.base_powergrid['buildings']}
 
         # Adjust ESS actions to prevent simultaneous charging and discharging
         ess_charging, ess_discharging = self.adjust_ess_actions(ess_charging, ess_discharging)
 
+        # Clip the reactive power for PVs using the scaling and clipping function
+        q_pv = {}
         for g in self.base_powergrid['PVs_at_buildings']:
-            q_pv[g] = self._clip_reactive_power(q_pv[g], self.current_pv_power[g])
+            q_pv[g] = self._scale_and_clip_q_pv(actions[3 * num_buildings + self.base_powergrid['PVs_at_buildings'].index(g)], pv_active_power[g])
 
         for k in ess_charging:
             ess_charging[k], ess_discharging[k] = self._clip_power_charging_discharging(ess_charging[k], ess_discharging[k], self.current_ess_energy[k])
-
-        pv_active_power = {g: self.current_pv_power[g] for g in self.base_powergrid['PVs_at_buildings']}
-        
-        # # Ensure the keys match the indices of the components in the network data
-        # pv_active_power = {k: pv_active_power[k] for k in self.base_powergrid['PVs_at_buildings']}
-        # q_pv = {k: q_pv[k] for k in self.base_powergrid['PVs_at_buildings']}
-
-        # Print all values going into the power_flow_solver
-        print("Network Data:", self.base_powergrid)
-        print("Active Power Demand:", self.current_active_demand)
-        print("Reactive Power Demand:", self.current_reactive_demand)
-        print("Power Reduction:", power_reduction)
-        print("PV Active Power:", pv_active_power)
-        print("PV Reactive Power:", q_pv)
-        print("ESS Charging:", ess_charging)
-        print("ESS Discharging:", ess_discharging)
-        print("Initial ESS Energy:", self.initial_ess_energy)
 
         result = power_flow_solver(
             self.base_powergrid,
@@ -138,8 +128,6 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
             ess_discharging,
             self.initial_ess_energy
         )
-
-        print("Results", result)
 
         voltages = result['Voltages']
         ess_energy = result['Next ESS Energy']
@@ -164,6 +152,12 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
 
         # Ensure the reward is a scalar value
         total_reward = np.sum(reward)
+
+        # Store the values as attributes for later access
+        self.percentage_reduction = percentage_reduction
+        self.ess_charging = ess_charging
+        self.ess_discharging = ess_discharging
+        self.q_pv = q_pv
 
         return total_reward, terminated, info
 
@@ -223,7 +217,6 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
 
     def _load_pv_data(self):
         """load pv data
-        the sensor frequency is set to 3 or 15 mins as default
         """
         pv_path = os.path.join(self.data_path, 'pv_active.csv')
         pv = pd.read_csv(pv_path, index_col=None)
@@ -234,29 +227,36 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
 
     def _load_active_demand_data(self):
         """load active demand data
-        the sensor frequency is set to 3 or 15 mins as default
         """
         demand_path = os.path.join(self.data_path, 'load_active.csv')
         demand = pd.read_csv(demand_path, index_col=None)
         demand.index = pd.to_datetime(demand.iloc[:, 0])
         demand.index.name = 'time'
         demand = demand.iloc[::1, 1:] * self.args.demand_scale
+        # # Drop the first column (DateTime) as it is now set as the index
+        # demand = demand.drop(columns=demand.columns[0])
+
+        # # Apply scaling to the DataFrame columns
+        # demand = demand * self.args.demand_scale
         return self.resample_data(demand, self.sample_interval)
     
     def _load_reactive_demand_data(self):
         """load reactive demand data
-        the sensor frequency is set to 3 min as default
         """
         demand_path = os.path.join(self.data_path, 'load_reactive.csv')
         demand = pd.read_csv(demand_path, index_col=None)
         demand.index = pd.to_datetime(demand.iloc[:, 0])
         demand.index.name = 'time'
         demand = demand.iloc[::1, 1:] * self.args.reactive_scale
+        # # Drop the first column (DateTime) as it is now set as the index
+        # demand = demand.drop(columns=demand.columns[0])
+
+        # # Apply scaling to the DataFrame columns
+        # demand = demand * self.args.reactive_scale
         return self.resample_data(demand, self.sample_interval)
     
     def _load_price_data(self):
         """load price data
-        the sensor frequency is set to 3 min as default
         """
         price_path = os.path.join(self.data_path, 'prices.csv')
         price = pd.read_csv(price_path, index_col=None)
@@ -303,10 +303,12 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         self.current_reactive_demand = {bus: self.reactive_demand_history[self.steps][i] for i, bus in enumerate(self.base_powergrid['bus_numbers'])}
         self.current_price = self.price_history[self.steps]
 
-    def _clip_reactive_power(self, reactive_actions, active_power):
-        """Clip the reactive power to the safety range."""
-        reactive_power_constraint = tan(acos(self.cos_phi_max)) * active_power
-        return np.clip(reactive_actions, -reactive_power_constraint, reactive_power_constraint)
+    def _scale_and_clip_q_pv(self, reactive_action, active_power):
+        """Scale and clip the reactive power based on the action and active power."""
+        reactive_power_constraint = tan(acos(self.args.cos_phi_max)) * active_power
+        q_pv_min = -reactive_power_constraint
+        q_pv_max = reactive_power_constraint
+        return np.clip(q_pv_min + reactive_action * (q_pv_max - q_pv_min), q_pv_min, q_pv_max)
 
     def _clip_power_charging_discharging(self, charging, discharging, current_ess_energy):
         # Clip charging and discharging to their respective maximum values
