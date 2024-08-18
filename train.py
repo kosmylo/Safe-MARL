@@ -28,7 +28,7 @@ with open("./MADRL/args/default.yaml", "r") as f:
 # load alg args
 with open("./MADRL/args/alg_args/" + argv.alg + ".yaml", "r") as f:
     alg_config_dict = yaml.safe_load(f)["alg_args"]
-    alg_config_dict["action_low"] = env_config_dict.get("action_low", -1.0)
+    alg_config_dict["action_low"] = env_config_dict.get("action_low", 0.0)
     alg_config_dict["action_high"] = env_config_dict.get("action_high", 1.0)
     alg_config_dict["action_bias"] = env_config_dict.get("action_bias", 0.0)  
     alg_config_dict["action_scale"] = env_config_dict.get("action_scale", 1.0)
