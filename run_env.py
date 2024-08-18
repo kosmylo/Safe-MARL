@@ -37,7 +37,17 @@ env_config_dict["data_path"] = "/".join(data_path)
 env = FlexibilityProvisionEnv(env_config_dict)
 
 n_agents = env.get_num_of_agents()
-n_actions = env.get_total_actions()
+n_actions = env.get_total_actions()   
+obs_size = env.get_obs_size()
+state_size = env.get_state_size()
+avail_actions = env.get_avail_actions()
+
+# Log environment details
+logger.info(f"Number of agents: {n_agents}")
+logger.info(f"Total number of actions: {n_actions}")
+logger.info(f"Observation size: {obs_size}")
+logger.info(f"State size: {state_size}")
+logger.info(f"Available actions for agents: {avail_actions}")
 
 n_episodes = 1
 
