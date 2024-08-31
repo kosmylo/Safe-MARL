@@ -4,10 +4,34 @@ import argparse
 import yaml
 from tensorboardX import SummaryWriter
 
-from MADRL.models.model_registry import Model, Strategy
-from MADRL.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
+from madrl.models.model_registry import Model, Strategy
+from madrl.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
 from utils.util import convert, dict2str
 from utils.trainer import PGTrainer
+from utils.plot_res import plot_training_metrics
+import time
+import logging
+
+# Set up logging directory and file
+log_dir = "logs/train_logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file_path = os.path.join(log_dir, "train_log.txt")
+
+# Configure the logger
+train_logger = logging.getLogger('TrainLogger')
+train_logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# File handler
+file_handler = logging.FileHandler(log_file_path, mode='w')
+file_handler.setFormatter(formatter)
+train_logger.addHandler(file_handler)
+
+# Stream handler (optional, if you want to see logs in the console)
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+train_logger.addHandler(stream_handler)
 
 parser = argparse.ArgumentParser(description="Train rl agent.")
 parser.add_argument("--save-path", type=str, nargs="?", default="./", help="Please enter the directory of saving model.")
@@ -16,17 +40,17 @@ parser.add_argument("--env", type=str, nargs="?", default="flex_provision", help
 argv = parser.parse_args()
 
 # load env args
-with open("./MADRL/args/env_args/"+argv.env+".yaml", "r") as f:
+with open("./madrl/args/env_args/"+argv.env+".yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 data_path = env_config_dict["data_path"].split("/")
 env_config_dict["data_path"] = "/".join(data_path)
 
 # load default args
-with open("./MADRL/args/default.yaml", "r") as f:
+with open("./madrl/args/default.yaml", "r") as f:
     default_config_dict = yaml.safe_load(f)
 
 # load alg args
-with open("./MADRL/args/alg_args/" + argv.alg + ".yaml", "r") as f:
+with open("./madrl/args/alg_args/" + argv.alg + ".yaml", "r") as f:
     alg_config_dict = yaml.safe_load(f)["alg_args"]
     alg_config_dict["action_low"] = env_config_dict.get("action_low", 0.0)
     alg_config_dict["action_high"] = env_config_dict.get("action_high", 1.0)
@@ -74,7 +98,7 @@ model = Model[argv.alg]
 
 strategy = Strategy[argv.alg]
 
-print (f"{args}\n")
+train_logger.info(f"{args}\n")
 
 if strategy == "pg":
     train = PGTrainer(args, model, env, logger)
@@ -89,13 +113,36 @@ with open(save_path + "tensorboard/" + log_name + "/log.txt", "w+") as file:
     file.write(alg_args2str + "\n")
     file.write(env_args2str + "\n")
 
+# Initialize variables to track training metrics
+rewards = []
+policy_losses = []
+value_losses = []
+start_time = time.time()
+
 for i in range(args.train_episodes_num):
     stat = {}
+    train_logger.info(f"Running episode {i}")
     train.run(stat, i)
+    train_logger.info(f"Episode {i} completed")
+
+    episode_reward = stat['mean_train_reward']
+    rewards.append(episode_reward)
+    policy_loss = stat['mean_policy_loss']
+    policy_losses.append(policy_loss)
+    value_loss = stat['mean_value_loss']
+    value_losses.append(value_loss)
+    
     train.logging(stat)
     if i%args.save_model_freq == args.save_model_freq-1:
         train.print_info(stat)
         th.save({"model_state_dict": train.behaviour_net.state_dict()}, save_path + "model_save/" + log_name + "/model.pt")
-        print ("The model is saved!\n")
+        train_logger.info("The model is saved!\n")
+
+# Calculate total training time
+end_time = time.time()
+total_training_time = end_time - start_time
+train_logger.info(f"Total Training Time: {total_training_time:.2f} seconds")
+
+plot_training_metrics(rewards)
 
 logger.close()

@@ -16,7 +16,7 @@ class ActionSpace(object):
         self.high = high
 
 class FlexibilityProvisionEnv(MultiAgentEnv):
-    """this class is for the environment of decentralized flexibility provision
+    """this class is for the environment of distributed flexibility provision
 
         it is easy to interact with the environment, e.g.,
 
@@ -62,7 +62,10 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         self.n_agents = len(self.base_powergrid['buildings'])
         self.n_actions = 4  # P_red, P_esc, P_esd, Q_pv for each building
         self.agent_ids = self.base_powergrid['buildings']  # Agent IDs equal to bus IDs with buildings
-        self.reset()
+        agents_obs, state = self.reset()
+
+        self.obs_size = agents_obs[0].shape[0]
+        self.state_size = state.shape[0]
 
     def reset(self):
         self.steps = 0
@@ -85,12 +88,23 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
 
     def step(self, actions):
         num_buildings = len(self.base_powergrid['buildings'])
-        
-        percentage_reduction = {self.base_powergrid['buildings'][i]: self.args.max_power_reduction * actions[i] for i in range(num_buildings)}
-        ess_charging = {self.base_powergrid['ESSs_at_buildings'][i]: self.args.p_ch_max * actions[num_buildings + i] for i in range(num_buildings)}
-        ess_discharging = {self.base_powergrid['ESSs_at_buildings'][i]: self.args.p_dis_max * actions[2 * num_buildings + i] for i in range(num_buildings)}
-        q_pv = {self.base_powergrid['PVs_at_buildings'][i]: self._scale_and_clip_q_pv(actions[3 * num_buildings + i], self.current_pv_power[self.base_powergrid['PVs_at_buildings'][i]]) for i in range(len(self.base_powergrid['PVs_at_buildings']))}
-        
+
+        # Reshape actions to match the expected shape
+        actions = actions.reshape((self.n_agents*self.n_actions))
+
+        # Initialize dictionaries to hold the parsed actions
+        percentage_reduction = {}
+        ess_charging = {}
+        ess_discharging = {}
+        q_pv = {}
+
+        for i in range(num_buildings):
+            # Each agent controls 4 actions
+            percentage_reduction[self.base_powergrid['buildings'][i]] = self.args.max_power_reduction * actions[i * 4]
+            ess_charging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_ch_max * actions[i * 4 + 1]
+            ess_discharging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_dis_max * actions[i * 4 + 2]
+            q_pv[self.base_powergrid['PVs_at_buildings'][i]] = self._scale_and_clip_q_pv(actions[i * 4 + 3], self.current_pv_power[self.base_powergrid['PVs_at_buildings'][i]])
+
         # Clip the power reduction percentages to be within the allowed range
         percentage_reduction = self.clip_percentage_reduction(percentage_reduction)
         
@@ -131,13 +145,11 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         state = self.get_state()
 
         terminated = self.steps >= self.episode_limit
+
         self.steps += 1
 
         # Update initial_ess_energy for the next step
         self.initial_ess_energy = ess_energy
-
-        # Ensure the reward is a scalar value
-        total_reward = np.sum(reward)
 
         # Store the values as attributes for later access
         self.percentage_reduction = percentage_reduction
@@ -145,7 +157,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         self.ess_discharging = ess_discharging
         self.q_pv = q_pv
 
-        return total_reward, terminated, info
+        return reward, terminated, info
 
     def get_state(self):
         """ Returns the global state of the environment. """
@@ -173,7 +185,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
             obs.append(self.current_price[0])
             obs.append(self.current_ess_energy[building])
             
-        agents_obs.append(np.array(obs))
+            agents_obs.append(np.array(obs))
         
         return agents_obs
 
@@ -362,6 +374,14 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         discomfort_penalty = sum(self.args.discomfort_coeff * power_reduction[b] for b in power_reduction)
         voltage_penalty = sum(self.args.voltage_coeff * max(0, v - self.args.v_max, self.args.v_min - v) for v in voltages.values())
         reward = revenue - der_cost - ess_cost - discomfort_penalty - voltage_penalty
+
+        # Ensure that values are all scalars
+        revenue = float(revenue)
+        reward = float(reward)
+        der_cost = float(der_cost)
+        ess_cost = float(ess_cost)
+        discomfort_penalty = float(discomfort_penalty)
+        
         info = {
             'revenue': revenue,
             'der_cost': der_cost,
@@ -373,19 +393,26 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         return reward, info
 
     def get_obs_size(self):
-        """ Returns the observation size. """
-        return len(self.get_obs_agent(self.agent_ids[0]))
+        """return the observation size
+        """
+        return self.obs_size
 
     def get_state_size(self):
-        return self.get_state().shape[0]
+        """return the state size
+        """
+        return self.state_size
 
     def get_avail_actions(self):
-        """Return available actions for all agents."""
-        return np.array([self.get_avail_agent_actions(agent_id) for agent_id in range(self.n_agents)])
+        """return available actions for all agents
+        """
+        avail_actions = []
+        for agent_id in range(self.n_agents):
+            avail_actions.append(self.get_avail_agent_actions(agent_id))
+        return np.expand_dims(np.array(avail_actions), axis=0)
 
     def get_avail_agent_actions(self, agent_id):
         """Return the available actions for agent_id."""
-        return [1] * self.n_actions  # Each agent has access to its set of actions
+        return [1] * self.n_actions 
 
     def get_total_actions(self):
         return self.n_actions

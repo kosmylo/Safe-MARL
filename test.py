@@ -3,67 +3,47 @@ import argparse
 import yaml
 import pickle
 
-from MADRL.models.model_registry import Model, Strategy
-from MADRL.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
+from madrl.models.model_registry import Model, Strategy
+from madrl.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
 from utils.util import convert
 from utils.tester import PGTester
 
-parser = argparse.ArgumentParser(description="Train rl agent.")
+parser = argparse.ArgumentParser(description="Test rl agent.")
 parser.add_argument("--save-path", type=str, nargs="?", default="./", help="Please enter the directory of saving model.")
 parser.add_argument("--alg", type=str, nargs="?", default="maddpg", help="Please enter the alg name.")
-parser.add_argument("--env", type=str, nargs="?", default="var_voltage_control", help="Please enter the env name.")
-parser.add_argument("--alias", type=str, nargs="?", default="", help="Please enter the alias for exp control.")
-parser.add_argument("--mode", type=str, nargs="?", default="distributed", help="Please enter the mode: distributed or decentralised.")
-parser.add_argument("--scenario", type=str, nargs="?", default="bus33_3min_final", help="Please input the valid name of an environment scenario.")
-parser.add_argument("--voltage-barrier-type", type=str, nargs="?", default="l1", help="Please input the valid voltage barrier type: l1, courant_beltrami, l2, bowl or bump.")
+parser.add_argument("--env", type=str, nargs="?", default="flex_provision", help="Please enter the env name.")
 parser.add_argument("--test-mode", type=str, nargs="?", default="single", help="Please input the valid test mode: single or batch.")
 parser.add_argument("--test-day", type=int, nargs="?", default=730, help="Please input the day you would test if the test mode is single.")
 parser.add_argument("--render", action="store_true", help="Activate the rendering of the environment.")
 argv = parser.parse_args()
 
 # load env args
-with open("./args/env_args/"+argv.env+".yaml", "r") as f:
+with open("./madrl/args/env_args/"+argv.env+".yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 data_path = env_config_dict["data_path"].split("/")
-data_path[-1] = argv.scenario
 env_config_dict["data_path"] = "/".join(data_path)
-net_topology = argv.scenario
-
-# set the action range
-assert net_topology in ['case33_3min_final', 'case141_3min_final', 'case322_3min_final'], f'{net_topology} is not a valid scenario.'
-if argv.scenario == 'case33_3min_final':
-    env_config_dict["action_bias"] = 0.0
-    env_config_dict["action_scale"] = 0.8
-elif argv.scenario == 'case141_3min_final':
-    env_config_dict["action_bias"] = 0.0
-    env_config_dict["action_scale"] = 0.6
-elif argv.scenario == 'case322_3min_final':
-    env_config_dict["action_bias"] = 0.0
-    env_config_dict["action_scale"] = 0.8
-
-assert argv.mode in ['distributed', 'decentralised'], "Please input the correct mode, e.g. distributed or decentralised."
-env_config_dict["mode"] = argv.mode
-env_config_dict["voltage_barrier_type"] = argv.voltage_barrier_type
 
 # for one-day test
 env_config_dict["episode_limit"] = 480
 
 # load default args
-with open("./args/default.yaml", "r") as f:
+with open("./madrl/args/default.yaml", "r") as f:
     default_config_dict = yaml.safe_load(f)
 default_config_dict["max_steps"] = 480
 
 # load alg args
-with open("./args/alg_args/"+argv.alg+".yaml", "r") as f:
+with open("./madrl/args/alg_args/"+argv.alg+".yaml", "r") as f:
     alg_config_dict = yaml.safe_load(f)["alg_args"]
-    alg_config_dict["action_scale"] = env_config_dict["action_scale"]
-    alg_config_dict["action_bias"] = env_config_dict["action_bias"]
+    alg_config_dict["action_low"] = env_config_dict.get("action_low", 0.0)
+    alg_config_dict["action_high"] = env_config_dict.get("action_high", 1.0)
+    alg_config_dict["action_bias"] = env_config_dict.get("action_bias", 0.0)  
+    alg_config_dict["action_scale"] = env_config_dict.get("action_scale", 1.0)
 
-log_name = "-".join([argv.env, net_topology, argv.mode, argv.alg, argv.voltage_barrier_type, argv.alias])
+log_name = "-".join([argv.env, argv.alg])
 alg_config_dict = {**default_config_dict, **alg_config_dict}
 
 # define envs
-env = VoltageControl(env_config_dict)
+env = FlexibilityProvisionEnv(env_config_dict)
 
 alg_config_dict["agent_num"] = env.get_num_of_agents()
 alg_config_dict["obs_size"] = env.get_obs_size()
@@ -72,12 +52,12 @@ alg_config_dict["cuda"] = False
 args = convert(alg_config_dict)
 
 # define the save path
-if argv.save_path[-1] is "/":
+if argv.save_path[-1] == "/":
     save_path = argv.save_path
 else:
     save_path = argv.save_path+"/"
 
-LOAD_PATH = save_path+log_name+"/model.pt"
+LOAD_PATH = save_path+"model_save/"+log_name+"/model.pt"
 
 model = Model[argv.alg]
 

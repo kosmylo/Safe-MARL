@@ -4,7 +4,7 @@ import yaml
 import numpy as np
 
 # load env args
-with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 
 def power_flow_solver(network_data, active_power_demand, reactive_power_demand, power_reduction, pv_active_power, pv_reactive_power, ess_charging, ess_discharging, initial_ess_energy):

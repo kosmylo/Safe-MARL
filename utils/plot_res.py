@@ -3,7 +3,7 @@ import numpy as np
 import yaml
 
 # load env args
-with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 
 def plot_optimization_results(results):
@@ -362,4 +362,39 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.grid(True)
     plt.legend()
     plt.savefig('plots/run_env_results/PV_Reactive_Power.png')
+    plt.close()
+
+def plot_training_metrics(rewards, policy_losses, value_losses):
+
+    # Plot average reward per episode
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(rewards)), rewards, 'o-', label='Average Reward per Episode')
+    plt.title('Average Reward During Training')
+    plt.xlabel('Episode')
+    plt.ylabel('Average Reward (Euros)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/train_results/Average_Reward_During_Training.png')
+    plt.close()
+
+    # Plot policy loss per episode
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(policy_losses)), policy_losses, 'o-', label='Policy Loss per Episode')
+    plt.title('Policy Loss During Training')
+    plt.xlabel('Episode')
+    plt.ylabel('Policy Loss')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/train_results/Policy_Loss_During_Training.png')
+    plt.close()
+
+    # Plot value loss per episode
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(value_losses)), value_losses, 'o-', label='Value Loss per Episode')
+    plt.title('Value Loss During Training')
+    plt.xlabel('Episode')
+    plt.ylabel('Value Loss')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig('plots/train_results/Value_Loss_During_Training.png')
     plt.close()

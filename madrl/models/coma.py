@@ -2,8 +2,8 @@ import torch as th
 import torch.nn as nn
 import numpy as np
 from utils.util import select_action, multinomials_log_density, normal_log_density
-from MADRL.models.model import Model
-from MADRL.critics.mlp_critic import MLPCritic
+from madrl.models.model import Model
+from madrl.critics.mlp_critic import MLPCritic
 import torch.nn as nn
 
 class COMA(Model):

@@ -1,6 +1,6 @@
 import torch as th
 import numpy as np
-from MADRL.models.model import Model
+from madrl.models.model import Model
 
 class RandomAgent(Model):
 

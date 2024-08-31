@@ -1,9 +1,10 @@
-from MADRL.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
+from madrl.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
 from utils.plot_res import plot_environment_results
 import numpy as np
 import yaml
 import os
 import logging
+import time
 
 # Ensure the logs directory exists
 log_dir = "logs/run_env_logs"
@@ -28,7 +29,7 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 # load env args
-with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 data_path = env_config_dict["data_path"].split("/")
 env_config_dict["data_path"] = "/".join(data_path)
@@ -53,8 +54,11 @@ n_episodes = 1
 
 for e in range(n_episodes):
     state, global_state = env.reset()
-    max_steps = 24
+    max_steps = 96
     episode_reward = 0
+
+    # Start timer for episode
+    start_time = time.time()
 
     # Initialize lists to store real action values for each timestep
     all_percentage_reduction = []
@@ -149,6 +153,11 @@ for e in range(n_episodes):
         logger.info(f"Reactive Power from PV at timestep {t} (kVar): "
                     f"{ {pv: q_pv[pv] * env_config_dict['s_nom'] for pv in q_pv} }")
         logger.info(f"Reward at timestep {t}: {reward}")
+    
+    # End timer for episode
+    end_time = time.time()
+    episode_time = end_time - start_time
+    logger.info(f"Total time for episode {e}: {episode_time:.2f} seconds")
     
     logger.info(f"Total reward in episode {e} = {episode_reward:.2f}")
     
