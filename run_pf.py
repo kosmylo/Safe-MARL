@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # load env args
-with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 
 # Load the network data

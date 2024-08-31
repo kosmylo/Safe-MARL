@@ -2,8 +2,8 @@ import torch as th
 import torch.nn as nn
 import numpy as np
 from utils.util import select_action
-from MADRL.models.model import Model
-from MADRL.critics.maac_critic import AttentionCritic
+from madrl.models.model import Model
+from madrl.critics.maac_critic import AttentionCritic
 
 class MAAC(Model):
     def __init__(self, args, target_net=None):

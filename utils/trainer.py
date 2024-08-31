@@ -3,6 +3,9 @@ import torch as th
 from torch import optim
 from utils.util import multinomial_entropy, get_grad_norm, normal_entropy
 from utils.replay_buffer import TransReplayBuffer, EpisodeReplayBuffer
+import logging
+
+train_logger = logging.getLogger('TrainLogger')
 
 class PGTrainer(object):
     def __init__(self, args, model, env, logger):
@@ -69,6 +72,7 @@ class PGTrainer(object):
         self.mixer_transition_process(stat, batch)
 
     def policy_transition_process(self, stat, trans):
+        train_logger.info("PGTrainer: policy_transition_process")
         if self.args.continuous:
             policy_loss, _, logits = self.get_loss(trans)
             means, log_stds = logits
@@ -86,6 +90,7 @@ class PGTrainer(object):
         stat['mean_train_policy_loss'] = policy_loss.clone().mean().item()
 
     def value_transition_process(self, stat, trans):
+        train_logger.info("PGTrainer: value_transition_process")
         _, value_loss, _ = self.get_loss(trans)
         self.value_optimizer.zero_grad()
         self.value_compute_grad(value_loss, False)
@@ -106,17 +111,21 @@ class PGTrainer(object):
         stat['mean_train_mixer_loss'] = value_loss.clone().mean().item()
 
     def run(self, stat, episode):
+        train_logger.info("PGTrainer: run")
         self.behaviour_net.train_process(stat, self)
         if (episode%self.args.eval_freq == self.args.eval_freq-1) or (episode == 0):
             self.behaviour_net.evaluation(stat, self)
+            
 
     def logging(self, stat):
+        train_logger.info("PGTrainer: logging")
         for k, v in stat.items():
             self.logger.add_scalar('data/' + k, v, self.episodes)
 
     def print_info(self, stat):
+        train_logger.info("PGTrainer: print_info")
         string = [f'\nEpisode: {self.episodes}']
         for k, v in stat.items():
             string.append( k + f': {v:2.4f}' )
         string = "\n".join(string)
-        print (string)
+        train_logger.info(string)

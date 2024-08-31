@@ -1,4 +1,4 @@
-from MADRL.learning_algorithms.rl_algorithms import ReinforcementLearning
+from madrl.learning_algorithms.rl_algorithms import ReinforcementLearning
 from utils.util import normal_log_density, multinomials_log_density
 import torch as th
 import torch.nn as nn
