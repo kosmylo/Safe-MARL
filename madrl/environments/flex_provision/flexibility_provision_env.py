@@ -28,8 +28,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
             state = next_state
     """
     def __init__(self, kwargs):
-        """initialisation
-        """
+        """initialisation"""
         # unpack args
         args = kwargs
         if isinstance(args, dict):
@@ -44,11 +43,8 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         
         # load the model of power network
         self.base_powergrid = self._load_network()
-        self.cos_phi_max = args.cos_phi_max
-        self.max_power_reduction = args.max_power_reduction
         
         # load data
-        self.sample_interval = args.sample_interval
         self.pv_data = self._load_pv_data()
         self.active_demand_data = self._load_active_demand_data()
         self.reactive_demand_data = self._load_reactive_demand_data()
@@ -56,9 +52,10 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
 
         # define episode
         self.episode_limit = args.episode_limit
-        self.history = args.history
     
+        # define action space and observation space
         self.action_space = ActionSpace(low=self.args.action_low, high=self.args.action_high)
+        self.history = args.history
         self.n_agents = len(self.base_powergrid['buildings'])
         self.n_actions = 4  # P_red, P_esc, P_esd, Q_pv for each building
         self.agent_ids = self.base_powergrid['buildings']  # Agent IDs equal to bus IDs with buildings
@@ -68,6 +65,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         self.state_size = state.shape[0]
 
     def reset(self):
+        """Reset the environment."""
         self.steps = 0
         self.cumulative_reward = 0
         self.set_initial_state()
@@ -228,7 +226,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         pv.index = pd.to_datetime(pv.iloc[:, 0])
         pv.index.name = 'time'
         pv = pv.iloc[::1, 1:] * self.args.pv_scale
-        return self.resample_data(pv, self.sample_interval)
+        return self.resample_data(pv, self.args.sample_interval)
 
     def _load_active_demand_data(self):
         """load active demand data
@@ -238,12 +236,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         demand.index = pd.to_datetime(demand.iloc[:, 0])
         demand.index.name = 'time'
         demand = demand.iloc[::1, 1:] * self.args.demand_scale
-        # # Drop the first column (DateTime) as it is now set as the index
-        # demand = demand.drop(columns=demand.columns[0])
-
-        # # Apply scaling to the DataFrame columns
-        # demand = demand * self.args.demand_scale
-        return self.resample_data(demand, self.sample_interval)
+        return self.resample_data(demand, self.args.sample_interval)
     
     def _load_reactive_demand_data(self):
         """load reactive demand data
@@ -253,12 +246,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         demand.index = pd.to_datetime(demand.iloc[:, 0])
         demand.index.name = 'time'
         demand = demand.iloc[::1, 1:] * self.args.reactive_scale
-        # # Drop the first column (DateTime) as it is now set as the index
-        # demand = demand.drop(columns=demand.columns[0])
-
-        # # Apply scaling to the DataFrame columns
-        # demand = demand * self.args.reactive_scale
-        return self.resample_data(demand, self.sample_interval)
+        return self.resample_data(demand, self.args.sample_interval)
     
     def _load_price_data(self):
         """load price data
@@ -268,7 +256,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         price.index = pd.to_datetime(price.iloc[:, 0])
         price.index.name = 'time'
         price = price.iloc[::1, 1:]
-        return self.resample_data(price, self.sample_interval)
+        return self.resample_data(price, self.args.sample_interval)
     
     def resample_data(self, data, interval):
         """Resample data to the specified interval."""
@@ -364,7 +352,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         return ess_charging, ess_discharging
     
     def clip_percentage_reduction(self, percentage_reduction):
-        return {k: np.clip(v, 0,  self.max_power_reduction) for k, v in percentage_reduction.items()}
+        return {k: np.clip(v, 0,  self.args.max_power_reduction) for k, v in percentage_reduction.items()}
     
     def calculate_reward(self, power_reduction, ess_charging, ess_discharging, q_pv, voltages):
         lambda_flex = self.current_price
