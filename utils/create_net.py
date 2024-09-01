@@ -2,7 +2,7 @@ import pandas as pd
 import yaml
 
 # load env args
-with open("./MADRL/args/env_args/flex_provision.yaml", "r") as f:
+with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 
 def create_network():

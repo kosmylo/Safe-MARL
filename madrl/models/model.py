@@ -3,6 +3,9 @@ import torch.nn as nn
 import numpy as np
 from collections import namedtuple
 from utils.util import prep_obs, translate_action
+import logging
+
+train_logger = logging.getLogger('TrainLogger')
 
 class Model(nn.Module):
     def __init__(self, args):
@@ -147,15 +150,15 @@ class Model(nn.Module):
 
         if self.args.agent_type == 'mlp':
             if self.args.gaussian_policy:
-                from MADRL.agents.mlp_agent_gaussian import MLPAgent
+                from madrl.agents.mlp_agent_gaussian import MLPAgent
             else:
-                from MADRL.agents.mlp_agent import MLPAgent
+                from madrl.agents.mlp_agent import MLPAgent
             Agent = MLPAgent
         elif self.args.agent_type == 'rnn':
             if self.args.gaussian_policy:
-                from MADRL.agents.rnn_agent_gaussian import RNNAgent
+                from madrl.agents.rnn_agent_gaussian import RNNAgent
             else:
-                from MADRL.agents.rnn_agent import RNNAgent
+                from madrl.agents.rnn_agent import RNNAgent
             Agent = RNNAgent
         else:
             NotImplementedError()
@@ -193,6 +196,9 @@ class Model(nn.Module):
         return values
 
     def train_process(self, stat, trainer):
+
+        train_logger.info("Model: train_process")
+
         stat_train = {'mean_train_reward': 0}
 
         if self.args.episodic:

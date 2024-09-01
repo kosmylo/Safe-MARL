@@ -2,8 +2,8 @@ import torch as th
 import torch.nn as nn
 import numpy as np
 from utils.util import select_action
-from MADRL.models.model import Model
-from MADRL.critics.mlp_critic import MLPCritic
+from madrl.models.model import Model
+from madrl.critics.mlp_critic import MLPCritic
 
 class SQDDPG(Model):
     def __init__(self, args, target_net=None):
