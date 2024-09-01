@@ -2,13 +2,13 @@ env: "flexibility_provision"
 
 env_args:
     history: 1
-    pv_scale: 0.05 # equal to pv_cap
-    demand_scale: 0.5 # [0.1, 0.09, 0.12, 0.06, 0.06, 0.2, 0.2, 0.06, 0.06, 0.045, 0.06, 0.06, 0.12, 0.06, 0.06, 0.06, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.42, 0.42, 0.06, 0.06, 0.06, 0.12, 0.2, 0.15, 0.21, 0.06] 
-    reactive_scale: 1.0 # [0.06, 0.04, 0.08, 0.03, 0.02, 0.1, 0.1, 0.02, 0.02, 0.03, 0.035, 0.035, 0.08, 0.01, 0.02, 0.02, 0.04, 0.04, 0.04, 0.04, 0.04, 0.05, 0.2, 0.2, 0.025, 0.025, 0.02, 0.07, 0.6, 0.07, 0.1, 0.04]
+    pv_scale: 0.15 # equal to pv_cap
+    demand_scale: 1.0 
+    reactive_scale: 1.0 
     v_max: 1.1 # in pu
     v_min: 0.9 # in pu
     data_path: "./data"
-    episode_limit: 96 # in time intervals
+    episode_limit: 24 # in time intervals
     action_low: 0
     action_high: 1.0
     seed: 0
@@ -24,10 +24,10 @@ env_args:
     eta_dis: 0.9 
     cos_phi_max: 0.95
     max_power_reduction: 0.5 # % reduction
-    sample_interval: "15min" # '3min', '15min', '1h'
+    sample_interval: "1h" # '3min', '15min', '1h'
     buildings: [5, 10, 15, 20, 25]
     pv_nodes: [5, 10, 15, 20, 25]
     ess_nodes: [5, 10, 15, 20, 25]
     v_nom: 12.66  # kV
     s_nom: 1000  # kVA
-    pv_cap: 0.05 # pu
+    pv_cap: 0.15 # pu

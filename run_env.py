@@ -54,7 +54,7 @@ n_episodes = 1
 
 for e in range(n_episodes):
     state, global_state = env.reset()
-    max_steps = 96
+    max_steps = env_config_dict['episode_limit']
     episode_reward = 0
 
     # Start timer for episode
