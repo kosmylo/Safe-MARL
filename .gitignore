@@ -162,3 +162,5 @@ cython_debug/
 model_save/
 tensorboard/
 logs/
+test_record_*
+plots/
