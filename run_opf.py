@@ -2,12 +2,29 @@ from utils.create_net import create_network
 from utils.opf import opf_model
 from utils.plot_res import plot_optimization_results
 import yaml
+import os
 import logging
 
-# Configure the logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging directory and file
+log_dir = "logs/run_opf_logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file_path = os.path.join(log_dir, "run_opf_log.txt")
 
-logger = logging.getLogger(__name__)
+# Configure the logger
+run_opf_logger = logging.getLogger('RunOPFLogger')
+run_opf_logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# File handler
+file_handler = logging.FileHandler(log_file_path, mode='w')
+file_handler.setFormatter(formatter)
+run_opf_logger.addHandler(file_handler)
+
+# Stream handler (optional, if you want to see logs in the console)
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+run_opf_logger.addHandler(stream_handler)
 
 # load env args
 with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
@@ -31,6 +48,6 @@ initial_ess_energy = {k: env_config_dict['e_min'] for k in network_data['ESSs_at
 
 results = opf_model(network_data, flex_price, active_power_demand, reactive_power_demand, pv_active_power, initial_ess_energy)
 
-logger.info('Optimization results: %s', results)
+run_opf_logger.info('Optimization results: %s', results)
 
 plot_optimization_results(results)

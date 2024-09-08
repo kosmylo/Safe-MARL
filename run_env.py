@@ -14,19 +14,19 @@ os.makedirs(log_dir, exist_ok=True)
 log_file_path = os.path.join(log_dir, "run_env_log.txt")
 
 # Set up logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+run_env_logger = logging.getLogger('RunEnvLogger')
+run_env_logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 # File handler
 file_handler = logging.FileHandler(log_file_path, mode='w')
 file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+run_env_logger.addHandler(file_handler)
 
 # Stream handler
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
+run_env_logger.addHandler(stream_handler)
 
 # load env args
 with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
@@ -44,11 +44,11 @@ state_size = env.get_state_size()
 avail_actions = env.get_avail_actions()
 
 # Log environment details
-logger.info(f"Number of agents: {n_agents}")
-logger.info(f"Total number of actions: {n_actions}")
-logger.info(f"Observation size: {obs_size}")
-logger.info(f"State size: {state_size}")
-logger.info(f"Available actions for agents: {avail_actions}")
+run_env_logger.info(f"Number of agents: {n_agents}")
+run_env_logger.info(f"Total number of actions: {n_actions}")
+run_env_logger.info(f"Observation size: {obs_size}")
+run_env_logger.info(f"State size: {state_size}")
+run_env_logger.info(f"Available actions for agents: {avail_actions}")
 
 n_episodes = 1
 
@@ -134,32 +134,32 @@ for e in range(n_episodes):
         all_ess_energy.append(ess_energy)
 
         # Log the real values inside the logger.info() calls
-        logger.info(f"Real Active Demand at timestep {t} (kW): "
+        run_env_logger.info(f"Real Active Demand at timestep {t} (kW): "
                     f"{ {bus: active_demand[bus] * env_config_dict['s_nom'] for bus in active_demand} }")
-        logger.info(f"Real Reactive Demand at timestep {t} (kVar): "
+        run_env_logger.info(f"Real Reactive Demand at timestep {t} (kVar): "
                     f"{ {bus: reactive_demand[bus] * env_config_dict['s_nom'] for bus in reactive_demand} }")
-        logger.info(f"Real PV Power at timestep {t} (kW): "
+        run_env_logger.info(f"Real PV Power at timestep {t} (kW): "
                     f"{ {pv: pv_power[pv] * env_config_dict['s_nom'] for pv in pv_power} }")
-        logger.info(f"Voltages at timestep {t} (pu): {voltages}")
-        logger.info(f"Prices at timestep {t} (Euros/kWh): {prices}")
-        logger.info(f"ESS Energy at timestep {t} (kWh): "
+        run_env_logger.info(f"Voltages at timestep {t} (pu): {voltages}")
+        run_env_logger.info(f"Prices at timestep {t} (Euros/kWh): {prices}")
+        run_env_logger.info(f"ESS Energy at timestep {t} (kWh): "
                     f"{ {ess: ess_energy[ess] * env_config_dict['s_nom'] for ess in ess_energy} }")
-        logger.info(f"Power Reduction at timestep {t} (kW): "
+        run_env_logger.info(f"Power Reduction at timestep {t} (kW): "
                     f"{ {building: percentage_reduction[building] * active_demand[building] * env_config_dict['s_nom'] for building in percentage_reduction} }")
-        logger.info(f"ESS Charging at timestep {t} (kW): "
+        run_env_logger.info(f"ESS Charging at timestep {t} (kW): "
                     f"{ {ess: ess_charging[ess] * env_config_dict['s_nom'] for ess in ess_charging} }")
-        logger.info(f"ESS Discharging at timestep {t} (kW): "
+        run_env_logger.info(f"ESS Discharging at timestep {t} (kW): "
                     f"{ {ess: ess_discharging[ess] * env_config_dict['s_nom'] for ess in ess_discharging} }")
-        logger.info(f"Reactive Power from PV at timestep {t} (kVar): "
+        run_env_logger.info(f"Reactive Power from PV at timestep {t} (kVar): "
                     f"{ {pv: q_pv[pv] * env_config_dict['s_nom'] for pv in q_pv} }")
-        logger.info(f"Reward at timestep {t}: {reward}")
+        run_env_logger.info(f"Reward at timestep {t}: {reward}")
     
     # End timer for episode
     end_time = time.time()
     episode_time = end_time - start_time
-    logger.info(f"Total time for episode {e}: {episode_time:.2f} seconds")
+    run_env_logger.info(f"Total time for episode {e}: {episode_time:.2f} seconds")
     
-    logger.info(f"Total reward in episode {e} = {episode_reward:.2f}")
+    run_env_logger.info(f"Total reward in episode {e} = {episode_reward:.2f}")
     
     # Plot results
     plot_environment_results(all_active_demand, all_reactive_demand, all_pv_power, 

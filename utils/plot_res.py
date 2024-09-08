@@ -1,12 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+import os
 
 # load env args
 with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 
+def ensure_directory_exists(path):
+    """Ensure that the directory exists, if not, create it."""
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 def plot_optimization_results(results):
+
+    save_path = 'plots/run_opf_results/'
+    ensure_directory_exists(save_path)
 
     # Extract time periods from the results
     times = list(results['Power Reduction'].keys())
@@ -25,7 +34,8 @@ def plot_optimization_results(results):
     plt.ylabel('Power Reduction (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Power_Reduction_by_Buildings.png')
+    plt.savefig(os.path.join(save_path, 'Power_Reduction_by_Buildings.png'))
+    plt.close()
 
     # Plot Reactive Power Provided by PVs
     plt.figure(figsize=(10, 6))
@@ -36,7 +46,7 @@ def plot_optimization_results(results):
     plt.ylabel('Reactive Power (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Reactive_Power_Provided_by_PVs.png')
+    plt.savefig(os.path.join(save_path, 'Reactive_Power_Provided_by_PVs.png'))
     plt.close()
 
     # Plot ESS Charging
@@ -48,7 +58,8 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/ESS_Charging_Power.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Charging_Power.png'))
+    plt.close()
 
     # Plot ESS Discharging
     plt.figure(figsize=(10, 6))
@@ -59,7 +70,8 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/ESS_Discharging_Power.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Discharging_Power.png'))
+    plt.close()
 
     # Plot ESS Charging Indicator
     plt.figure(figsize=(10, 6))
@@ -70,7 +82,7 @@ def plot_optimization_results(results):
     plt.ylabel('Charging Indicator (0 or 1)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/ESS_Charging_Indicator.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Charging_Indicator.png'))    
     plt.close()
 
     # Plot ESS Energy
@@ -82,7 +94,7 @@ def plot_optimization_results(results):
     plt.ylabel('Energy (kWh)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/ESS_Energy.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Energy.png'))  
     plt.close()
 
     # Plot Voltage Profiles
@@ -94,7 +106,8 @@ def plot_optimization_results(results):
     plt.ylabel('Voltage (p.u.)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Voltage_at_Buses.png')
+    plt.savefig(os.path.join(save_path, 'Voltage_at_Buses.png'))  
+    plt.close()
 
     # Plot Active Power Load
     plt.figure(figsize=(10, 6))
@@ -105,7 +118,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Active_Power_Load.png')
+    plt.savefig(os.path.join(save_path, 'Active_Power_Load.png'))  
     plt.close()
 
     # Plot Reactive Power Load
@@ -117,7 +130,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Reactive_Power_Load.png')
+    plt.savefig(os.path.join(save_path, 'Reactive_Power_Load.png'))  
     plt.close()
 
     # Plot Active Power from PVs
@@ -129,7 +142,7 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Active_Power_from_PVs.png')
+    plt.savefig(os.path.join(save_path, 'Active_Power_from_PVs.png'))  
     plt.close()
 
     # Plot Active Power Flow
@@ -141,7 +154,8 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Active_Power_Flow_on_Lines.png')
+    plt.savefig(os.path.join(save_path, 'Active_Power_Flow_on_Lines.png'))  
+    plt.close()
 
     # Plot Reactive Power Flow
     plt.figure(figsize=(10, 6))
@@ -152,7 +166,8 @@ def plot_optimization_results(results):
     plt.ylabel('Power (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Reactive_Power_Flow_on_Lines.png')
+    plt.savefig(os.path.join(save_path, 'Reactive_Power_Flow_on_Lines.png'))  
+    plt.close()
 
     # Plot Currents on Lines
     plt.figure(figsize=(10, 6))
@@ -163,9 +178,13 @@ def plot_optimization_results(results):
     plt.ylabel('Current (pu)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_opf_results/Current_Flow_on_Lines.png')
+    plt.savefig(os.path.join(save_path, 'Current_Flow_on_Lines.png')) 
+    plt.close()
 
 def plot_power_flow_results(results):
+
+    save_path = 'plots/run_pf_results/'
+    ensure_directory_exists(save_path)
     
     # Plot Voltage Profiles at Buses
     plt.figure(figsize=(10, 6))
@@ -178,7 +197,7 @@ def plot_power_flow_results(results):
     plt.ylabel('Voltage (p.u.)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_pf_results/Voltage_Profile.png')
+    plt.savefig(os.path.join(save_path, 'Voltage_Profile.png'))
     plt.close()
 
     # Plot Currents on Lines
@@ -194,7 +213,7 @@ def plot_power_flow_results(results):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig('plots/run_pf_results/Current_Flow.png')
+    plt.savefig(os.path.join(save_path, 'Current_Flow.png'))
     plt.close()
 
     # Plot Active and Reactive Power Flows on Lines
@@ -212,7 +231,7 @@ def plot_power_flow_results(results):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()  # Adjust layout to give enough space for label rotation
-    plt.savefig('plots/run_pf_results/Power_Flows.png')
+    plt.savefig(os.path.join(save_path, 'Power_Flows.png'))
     plt.close()
 
     # Plot Next Energy State of ESS
@@ -225,12 +244,15 @@ def plot_power_flow_results(results):
     plt.ylabel('Energy (kWh)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_pf_results/Next_ESS_Energy.png')
+    plt.savefig(os.path.join(save_path, 'Next_ESS_Energy.png'))
     plt.close()
 
 # Function to plot environment results
 def plot_environment_results(active_demand, reactive_demand, pv_power, voltages, 
                              prices, ess_energy, rewards, percentage_reduction, ess_charging, ess_discharging, q_pv):
+    
+    save_path = 'plots/run_env_results/'
+    ensure_directory_exists(save_path)
     
     timesteps = range(len(active_demand))
 
@@ -243,7 +265,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Active Power Demand (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/Active_Power_Demand.png')
+    plt.savefig(os.path.join(save_path, 'Active_Power_Demand.png'))
     plt.close()
 
     # Reactive Power Demand
@@ -255,7 +277,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Reactive Power Demand (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/Reactive_Power_Demand.png')
+    plt.savefig(os.path.join(save_path, 'Reactive_Power_Demand.png'))
     plt.close()
 
     # PV Power
@@ -267,7 +289,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('PV Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/PV_Power.png')
+    plt.savefig(os.path.join(save_path, 'PV_Power.png'))
     plt.close()
 
     # Voltage Profile
@@ -279,7 +301,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Voltage (p.u.)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/Voltage_Profile.png')
+    plt.savefig(os.path.join(save_path, 'Voltage_Profile.png'))
     plt.close()
 
     # Prices
@@ -290,7 +312,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Price (Euros/kWh)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/Price.png')
+    plt.savefig(os.path.join(save_path, 'Price.png'))
     plt.close()
 
     # ESS Energy
@@ -302,7 +324,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Energy (kWh)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/ESS_Energy.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Energy.png'))
     plt.close()
 
     # Cumulative Reward
@@ -312,7 +334,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.xlabel('Time Step')
     plt.ylabel('Cumulative Reward (Euros)')
     plt.grid(True)
-    plt.savefig('plots/run_env_results/Cumulative_Reward.png')
+    plt.savefig(os.path.join(save_path, 'Cumulative_Reward.png'))
     plt.close()
 
     # Plot Percentage Reduction
@@ -325,7 +347,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Power Reduction (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/Power_Reduction.png')
+    plt.savefig(os.path.join(save_path, 'Power_Reduction.png'))
     plt.close()
 
     # Plot ESS Charging
@@ -337,7 +359,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Charging Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/ESS_Charging.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Charging.png'))
     plt.close()
 
     # Plot ESS Discharging
@@ -349,7 +371,7 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Discharging Power (kW)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/ESS_Discharging.png')
+    plt.savefig(os.path.join(save_path, 'ESS_Discharging.png'))
     plt.close()
 
     # Plot Reactive Power of PVs
@@ -361,10 +383,13 @@ def plot_environment_results(active_demand, reactive_demand, pv_power, voltages,
     plt.ylabel('Reactive Power (kVar)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/run_env_results/PV_Reactive_Power.png')
+    plt.savefig(os.path.join(save_path, 'PV_Reactive_Power.png'))
     plt.close()
 
 def plot_training_metrics(rewards, policy_losses, value_losses):
+
+    save_path = 'plots/train_results/'
+    ensure_directory_exists(save_path)
 
     # Plot average reward per episode
     plt.figure(figsize=(10, 6))
@@ -374,7 +399,7 @@ def plot_training_metrics(rewards, policy_losses, value_losses):
     plt.ylabel('Average Reward (Euros)')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/train_results/Average_Reward_During_Training.png')
+    plt.savefig(os.path.join(save_path, 'Average_Reward_During_Training.png'))
     plt.close()
 
     # Plot policy loss per episode
@@ -385,7 +410,7 @@ def plot_training_metrics(rewards, policy_losses, value_losses):
     plt.ylabel('Policy Loss')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/train_results/Policy_Loss_During_Training.png')
+    plt.savefig(os.path.join(save_path, 'Policy_Loss_During_Training.png'))
     plt.close()
 
     # Plot value loss per episode
@@ -396,5 +421,121 @@ def plot_training_metrics(rewards, policy_losses, value_losses):
     plt.ylabel('Value Loss')
     plt.grid(True)
     plt.legend()
-    plt.savefig('plots/train_results/Value_Loss_During_Training.png')
+    plt.savefig(os.path.join(save_path, 'Value_Loss_During_Training.png'))
+    plt.close()
+
+def plot_testing_results(record):
+    """Plot the testing results from the test phase."""
+
+    save_path = 'plots/test_results/'
+    ensure_directory_exists(save_path)
+    
+    timesteps = range(len(record['pv_active']))
+
+    # Plot Active Power from PVs
+    plt.figure(figsize=(10, 6))
+    for i, pv in enumerate(record['pv_active'][0]):
+        plt.plot(timesteps, [pv_val[i] * env_config_dict['s_nom'] for pv_val in record['pv_active']], label=f'PV {i}')
+    plt.title('Active Power from PVs Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Active Power (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'Active_Power_from_PVs.png'))
+    plt.close()
+
+    # Plot Reactive Power from PVs
+    plt.figure(figsize=(10, 6))
+    for i, pv in enumerate(record['pv_reactive'][0]):
+        plt.plot(timesteps, [q_pv_val[i] * env_config_dict['s_nom'] for q_pv_val in record['pv_reactive']], label=f'PV {i}')
+    plt.title('Reactive Power from PVs Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Reactive Power (kVar)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'Reactive_Power_from_PVs.png'))
+    plt.close()
+
+    # Plot Active Power Demand at Buses
+    plt.figure(figsize=(10, 6))
+    for i, bus in enumerate(record['bus_active'][0]):
+        plt.plot(timesteps, [bus_active[i] * env_config_dict['s_nom'] for bus_active in record['bus_active']], label=f'Bus {i}')
+    plt.title('Active Power Demand at Buses Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Active Power (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'Active_Power_Demand_at_Buses.png'))
+    plt.close()
+
+    # Plot Reactive Power Demand at Buses
+    plt.figure(figsize=(10, 6))
+    for i, bus in enumerate(record['bus_reactive'][0]):
+        plt.plot(timesteps, [bus_reactive[i] * env_config_dict['s_nom'] for bus_reactive in record['bus_reactive']], label=f'Bus {i}')
+    plt.title('Reactive Power Demand at Buses Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Reactive Power (kVar)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'Reactive_Power_Demand_at_Buses.png'))
+    plt.close()
+
+    # Plot Voltage at Buses (in p.u.)
+    plt.figure(figsize=(10, 6))
+    for i, bus in enumerate(record['bus_voltage'][0]):
+        plt.plot(timesteps, [bus_voltage[i] for bus_voltage in record['bus_voltage']], label=f'Bus {i}')
+    plt.title('Voltage at Buses Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Voltage (p.u.)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'Voltage_at_Buses.png'))
+    plt.close()
+
+    # Plot ESS Energy (converted to kWh)
+    plt.figure(figsize=(10, 6))
+    for i, ess in enumerate(record['ess_energy'][0]):
+        plt.plot(timesteps, [ess_energy[i] * env_config_dict['s_nom'] for ess_energy in record['ess_energy']], label=f'ESS {i}')
+    plt.title('ESS Energy Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Energy (kWh)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'ESS_Energy.png'))
+    plt.close()
+
+    # Plot Power Reduction (converted to kW)
+    plt.figure(figsize=(10, 6))
+    for i, building in enumerate(record['power_reduction'][0]):
+        plt.plot(timesteps, [power_reduction[i] * env_config_dict['s_nom'] for power_reduction in record['power_reduction']], label=f'Building {i}')
+    plt.title('Power Reduction Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Power Reduction (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'Power_Reduction.png'))
+    plt.close()
+
+    # Plot ESS Charging Power (converted to kW)
+    plt.figure(figsize=(10, 6))
+    for i, ess in enumerate(record['ess_charging'][0]):
+        plt.plot(timesteps, [ess_charging[i] * env_config_dict['s_nom'] for ess_charging in record['ess_charging']], label=f'ESS {i} Charging')
+    plt.title('ESS Charging Power Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Charging Power (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'ESS_Charging.png'))
+    plt.close()
+
+    # Plot ESS Discharging Power (converted to kW)
+    plt.figure(figsize=(10, 6))
+    for i, ess in enumerate(record['ess_discharging'][0]):
+        plt.plot(timesteps, [ess_discharging[i] * env_config_dict['s_nom'] for ess_discharging in record['ess_discharging']], label=f'ESS {i} Discharging')
+    plt.title('ESS Discharging Power Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Discharging Power (kW)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(os.path.join(save_path, 'ESS_Discharging.png'))
     plt.close()

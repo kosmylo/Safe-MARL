@@ -8,7 +8,7 @@ env_args:
     v_max: 1.1 # in pu
     v_min: 0.9 # in pu
     data_path: "./data"
-    episode_limit: 24 # in time intervals
+    episode_limit: 96 # in time intervals
     action_low: 0
     action_high: 1.0
     seed: 0
@@ -24,7 +24,7 @@ env_args:
     eta_dis: 0.9 
     cos_phi_max: 0.95
     max_power_reduction: 0.5 # % reduction
-    sample_interval: "1h" # '3min', '15min', '1h'
+    sample_interval: "15min" # '3min', '15min', '1h'
     buildings: [5, 10, 15, 20, 25]
     pv_nodes: [5, 10, 15, 20, 25]
     ess_nodes: [5, 10, 15, 20, 25]

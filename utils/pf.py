@@ -53,22 +53,22 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
     # Constraints
     def active_power_balance_rule(model, n):
         # Calculates power balance including generation, demand, and storage effects
-        return sum(model.Pl[i, j] for (i, j) in model.L if j == n) - \
-               sum(model.Pl[i, j] + model.R[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + \
-               model.Ps[n] - \
-               model.Pload[n] + (model.Pred[n] if n in model.Pred else 0) + \
-               (model.Ppv[n] if n in model.Ppv else 0) - \
-               (model.Pesc[n] if n in model.K else 0) + \
-               (model.Pesd[n] if n in model.K else 0) == 0
+        return (sum(model.Pl[i, j] for (i, j) in model.L if j == n) - 
+               sum(model.Pl[i, j] + model.R[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + 
+               model.Ps[n] - 
+               model.Pload[n] + (model.Pred[n] if n in model.Pred else 0) + 
+               (model.Ppv[n] if n in model.Ppv else 0) - 
+               (model.Pesc[n] if n in model.K else 0) + 
+               (model.Pesd[n] if n in model.K else 0) == 0)
     model.active_power_balance = pyo.Constraint(model.N, rule=active_power_balance_rule)
 
     def reactive_power_balance_rule(model, n):
         # Ensures reactive power balance at each bus
-        return sum(model.Ql[i, j] for (i, j) in model.L if j == n) - \
-               sum(model.Ql[i, j] + model.X[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + \
-               model.Qs[n] - \
-               model.Qload[n] + \
-               (model.Qpv[n] if n in model.G else 0) == 0
+        return (sum(model.Ql[i, j] for (i, j) in model.L if j == n) - 
+               sum(model.Ql[i, j] + model.X[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + 
+               model.Qs[n] - 
+               model.Qload[n] + 
+               (model.Qpv[n] if n in model.G else 0) == 0)
     model.reactive_power_balance = pyo.Constraint(model.N, rule=reactive_power_balance_rule)
 
     def current_rule(model, i, j):
@@ -78,8 +78,8 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
 
     def voltage_drop_rule(model, i, j):
         # Voltage drop calculation based on line impedance and power flow
-        return model.Vsqr[i] - 2 * (model.R[i, j] * model.Pl[i, j] + model.X[i, j] * model.Ql[i, j]) - \
-               (model.R[i, j]**2 + model.X[i, j]**2) * model.Isqr[i, j] == model.Vsqr[j]
+        return (model.Vsqr[i] - 2 * (model.R[i, j] * model.Pl[i, j] + model.X[i, j] * model.Ql[i, j]) - 
+               (model.R[i, j]**2 + model.X[i, j]**2) * model.Isqr[i, j] == model.Vsqr[j])
     model.voltage_drop = pyo.Constraint(model.L, rule=voltage_drop_rule)
 
     def ess_energy_update_rule(model, k):
