@@ -8,6 +8,7 @@ from .matd3 import MATD3
 from .ippo import IPPO
 from .mappo import MAPPO
 from .facmaddpg import FACMADDPG
+from .safemaddpg import SAFEMADDPG
 
 Model = dict(maddpg=MADDPG,
              sqddpg=SQDDPG,
@@ -18,7 +19,8 @@ Model = dict(maddpg=MADDPG,
              matd3=MATD3,
              ippo=IPPO,
              mappo=MAPPO,
-             facmaddpg=FACMADDPG
+             facmaddpg=FACMADDPG,
+             safemaddpg=SAFEMADDPG
             )
 
 Strategy = dict(maddpg='pg',
@@ -30,5 +32,6 @@ Strategy = dict(maddpg='pg',
                 matd3='pg',
                 ippo='pg',
                 mappo='pg',
-                facmaddpg='pg'
+                facmaddpg='pg',
+                safemaddpg='pg'
             )
