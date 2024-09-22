@@ -38,6 +38,9 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         if isinstance(args, dict):
             args = convert(args)
         self.args = args
+    
+        # Set model_type based on the 'alg' argument
+        self.model = getattr(self.args, 'alg', None) 
 
         # set the data path
         self.data_path = args.data_path
@@ -47,7 +50,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         
         # load the model of power network
         self.base_powergrid = self._load_network()
-        
+
         # load data
         self.pv_data = self._load_pv_data()
         self.active_demand_data = self._load_active_demand_data()
@@ -262,24 +265,32 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         self.ess_discharging = {}
         self.q_pv = {}
 
-        for i in range(num_buildings):
-            # Each agent controls 4 actions
-            self.percentage_reduction[self.base_powergrid['buildings'][i]] = self.args.max_power_reduction * actions[i * 4]
-            self.ess_charging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_ch_max * actions[i * 4 + 1]
-            self.ess_discharging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_dis_max * actions[i * 4 + 2]
-            self.q_pv[self.base_powergrid['PVs_at_buildings'][i]] = self._scale_and_clip_q_pv(actions[i * 4 + 3], self.current_pv_power[self.base_powergrid['PVs_at_buildings'][i]])
+        if self.model == 'safemaddpg':
+            # Directly use actions for safemaddpg
+            for i in range(num_buildings):
+                self.percentage_reduction[self.base_powergrid['buildings'][i]] = actions[i * 4]
+                self.ess_charging[self.base_powergrid['ESSs_at_buildings'][i]] = actions[i * 4 + 1]
+                self.ess_discharging[self.base_powergrid['ESSs_at_buildings'][i]] = actions[i * 4 + 2]
+                self.q_pv[self.base_powergrid['PVs_at_buildings'][i]] = actions[i * 4 + 3]
+        else:
+            for i in range(num_buildings):
+                # Each agent controls 4 actions
+                self.percentage_reduction[self.base_powergrid['buildings'][i]] = self.args.max_power_reduction * actions[i * 4]
+                self.ess_charging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_ch_max * actions[i * 4 + 1]
+                self.ess_discharging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_dis_max * actions[i * 4 + 2]
+                self.q_pv[self.base_powergrid['PVs_at_buildings'][i]] = self._scale_and_clip_q_pv(actions[i * 4 + 3], self.current_pv_power[self.base_powergrid['PVs_at_buildings'][i]])
 
-        # Clip the power reduction percentages to be within the allowed range
-        self.percentage_reduction = self.clip_percentage_reduction(self.percentage_reduction)
+            # Clip the power reduction percentages to be within the allowed range
+            self.percentage_reduction = self.clip_percentage_reduction(self.percentage_reduction)
+            
+            # Adjust ESS actions to prevent simultaneous charging and discharging
+            self.ess_charging, self.ess_discharging = self.adjust_ess_actions(self.ess_charging, self.ess_discharging)
+
+            for k in self.ess_charging:
+                self.ess_charging[k], self.ess_discharging[k] = self._clip_power_charging_discharging(self.ess_charging[k], self.ess_discharging[k], self.current_ess_energy[k])
         
         # Compute power reduction based on active power demand and percentage reduction
         self.power_reduction = {building: self.current_active_demand[building] * self.percentage_reduction[building] for building in self.base_powergrid['buildings']}
-
-        # Adjust ESS actions to prevent simultaneous charging and discharging
-        self.ess_charging, self.ess_discharging = self.adjust_ess_actions(self.ess_charging, self.ess_discharging)
-
-        for k in self.ess_charging:
-            self.ess_charging[k], self.ess_discharging[k] = self._clip_power_charging_discharging(self.ess_charging[k], self.ess_discharging[k], self.current_ess_energy[k])
 
         # Try to solve the power flow with the applied actions
         solvable = False
