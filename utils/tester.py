@@ -28,7 +28,8 @@ class PGTester(object):
                   "ess_energy": [],
                   "power_reduction": [],
                   "ess_charging": [],
-                  "ess_discharging": []
+                  "ess_discharging": [],
+                  "price": []
             }
 
         record["pv_active"].append(self.env._get_pv_active())
@@ -40,6 +41,7 @@ class PGTester(object):
         record["power_reduction"].append(self.env._get_power_reduction())  
         record["ess_charging"].append(self.env._get_ess_charging())     
         record["ess_discharging"].append(self.env._get_ess_discharging())
+        record["price"].append(self.env._get_price())
 
         for t in range(self.args.max_steps):
             state_ = prep_obs(state).contiguous().view(1, self.n_, self.obs_dim).to(self.device)
@@ -56,6 +58,8 @@ class PGTester(object):
             record["power_reduction"].append(self.env._get_power_reduction())  
             record["ess_charging"].append(self.env._get_ess_charging())     
             record["ess_discharging"].append(self.env._get_ess_discharging())
+            record["price"].append(self.env._get_price())
+            
             next_state = self.env.get_obs()
             # set the next state
             state = next_state

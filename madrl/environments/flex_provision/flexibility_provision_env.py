@@ -274,20 +274,20 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
                 self.q_pv[self.base_powergrid['PVs_at_buildings'][i]] = actions[i * 4 + 3]
         else:
             for i in range(num_buildings):
-                # Each agent controls 4 actions
+                # Scale the actions for the rest of the models
                 self.percentage_reduction[self.base_powergrid['buildings'][i]] = self.args.max_power_reduction * actions[i * 4]
                 self.ess_charging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_ch_max * actions[i * 4 + 1]
                 self.ess_discharging[self.base_powergrid['ESSs_at_buildings'][i]] = self.args.p_dis_max * actions[i * 4 + 2]
                 self.q_pv[self.base_powergrid['PVs_at_buildings'][i]] = self._scale_and_clip_q_pv(actions[i * 4 + 3], self.current_pv_power[self.base_powergrid['PVs_at_buildings'][i]])
 
-            # Clip the power reduction percentages to be within the allowed range
-            self.percentage_reduction = self.clip_percentage_reduction(self.percentage_reduction)
+        # Clip the power reduction percentages to be within the allowed range
+        self.percentage_reduction = self.clip_percentage_reduction(self.percentage_reduction)
             
-            # Adjust ESS actions to prevent simultaneous charging and discharging
-            self.ess_charging, self.ess_discharging = self.adjust_ess_actions(self.ess_charging, self.ess_discharging)
+        # Adjust ESS actions to prevent simultaneous charging and discharging
+        self.ess_charging, self.ess_discharging = self.adjust_ess_actions(self.ess_charging, self.ess_discharging)
 
-            for k in self.ess_charging:
-                self.ess_charging[k], self.ess_discharging[k] = self._clip_power_charging_discharging(self.ess_charging[k], self.ess_discharging[k], self.current_ess_energy[k])
+        for k in self.ess_charging:
+            self.ess_charging[k], self.ess_discharging[k] = self._clip_power_charging_discharging(self.ess_charging[k], self.ess_discharging[k], self.current_ess_energy[k])
         
         # Compute power reduction based on active power demand and percentage reduction
         self.power_reduction = {building: self.current_active_demand[building] * self.percentage_reduction[building] for building in self.base_powergrid['buildings']}
@@ -772,3 +772,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
     def _get_ess_discharging(self):
         """Return the current discharging power for each ESS."""
         return np.array([self.ess_discharging[ess] for ess in self.base_powergrid['ESSs_at_buildings']])
+    
+    def _get_price(self):
+        """Return the current price at this time step."""
+        return np.array([self.current_price])
