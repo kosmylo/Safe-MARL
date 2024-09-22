@@ -47,7 +47,7 @@ def opf_model(network_data, flex_price, active_power_demand, reactive_power_dema
 
     # Define Variables
     model.Pred = pyo.Var(model.B, model.T, within=pyo.NonNegativeReals, bounds=lambda model, b, t: (0, model.Pred_max[b, t]))  # Power reduction by building
-    model.Qpv = pyo.Var(model.G, model.T, within=pyo.NonNegativeReals)  # Reactive power provided by PVs
+    model.Qpv = pyo.Var(model.G, model.T, within=pyo.Reals)  # Reactive power provided by PVs
     model.Pesc = pyo.Var(model.K, model.T, within=pyo.NonNegativeReals, bounds=(0, model.Pch_max))  # Power charged to ESS
     model.Pesd = pyo.Var(model.K, model.T, within=pyo.NonNegativeReals, bounds=(0, model.Pdis_max)) # Power discharged from ESS
     model.E = pyo.Var(model.K, model.T, within=pyo.NonNegativeReals, bounds=(model.Emin, model.Emax)) # Energy of the ESS

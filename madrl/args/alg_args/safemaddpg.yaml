@@ -1,0 +1,10 @@
+alg: "safemaddpg"
+
+alg_args:
+    "policy_lrate": 1.0e-4
+    "value_lrate": 1.0e-4
+    "gaussian_policy": False
+    "action_enforcebound": True
+    "v_min": 0.9
+    "v_max": 1.1
+    

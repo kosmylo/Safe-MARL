@@ -100,3 +100,76 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
     next_ess_energy = {k: model.E_next[k].value for k in model.K}
 
     return {'Voltages': voltages, 'Currents': currents, 'Power Flows': power_flows, 'Next ESS Energy': next_ess_energy}
+
+def power_flow_solver_simplified(network_data, P_net, Q_net):
+
+    # Define the model
+    model = pyo.ConcreteModel()
+
+    # Define Sets
+    model.N = pyo.Set(initialize=network_data['bus_numbers'])  # Buses
+    model.L = pyo.Set(initialize=network_data['line_connections'])  # Lines
+
+    # Define Parameters
+    model.R = pyo.Param(model.L, initialize=network_data['line_resistances'])  # Resistance of each line
+    model.X = pyo.Param(model.L, initialize=network_data['line_reactances'])  # Reactance of each line
+    model.Pnet = pyo.Param(model.N, initialize=P_net)  # Net active power at each bus
+    model.Qnet = pyo.Param(model.N, initialize=Q_net)  # Net reactive power at each bus
+
+    # Define Variables
+    model.Vsqr = pyo.Var(model.N, within=pyo.NonNegativeReals)  # Voltage squared at each bus
+    model.Pl = pyo.Var(model.L, within=pyo.Reals)  # Active power flow on each line
+    model.Ql = pyo.Var(model.L, within=pyo.Reals)  # Reactive power flow on each line
+    model.Isqr = pyo.Var(model.L, within=pyo.NonNegativeReals)  # Current squared on each line
+    model.Ps = pyo.Var(model.N, within=pyo.Reals)  # Active power generation at each bus
+    model.Qs = pyo.Var(model.N, within=pyo.Reals)  # Reactive power generation at each bus
+
+    # Slack Bus Identification and Configuration
+    for n in model.N:
+        if network_data['bus_types'][n] == 1:  # Check if the bus is a slack bus
+            model.Vsqr[n].fix(1)  # Fix voltage at the slack bus to 1 per unit
+        else:
+            model.Ps[n].fix(0)  # No generation at non-slack buses
+            model.Qs[n].fix(0)  # No generation at non-slack buses
+
+    # Constraints
+    def active_power_balance_rule(model, n):
+        # Active power balance at bus n
+        return (sum(model.Pl[i, j] for (i, j) in model.L if j == n) - 
+                sum(model.Pl[i, j] + model.R[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + 
+                model.Ps[n] - 
+                model.Pnet[n] == 0)
+    model.active_power_balance = pyo.Constraint(model.N, rule=active_power_balance_rule)
+
+    def reactive_power_balance_rule(model, n):
+        # Reactive power balance at bus n
+        return (sum(model.Ql[i, j] for (i, j) in model.L if j == n) - 
+                sum(model.Ql[i, j] + model.X[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + 
+                model.Qs[n] - 
+                model.Qnet[n] == 0)
+    model.reactive_power_balance = pyo.Constraint(model.N, rule=reactive_power_balance_rule)
+
+    def current_rule(model, i, j):
+        # Current calculation on line (i, j)
+        return model.Isqr[i, j] * model.Vsqr[j] == (model.Pl[i, j] ** 2 + model.Ql[i, j] ** 2)
+    model.current = pyo.Constraint(model.L, rule=current_rule)
+
+    def voltage_drop_rule(model, i, j):
+        # Voltage drop across line (i, j)
+        return (model.Vsqr[i] - 2 * (model.R[i, j] * model.Pl[i, j] + model.X[i, j] * model.Ql[i, j]) - 
+                (model.R[i, j] ** 2 + model.X[i, j] ** 2) * model.Isqr[i, j] == model.Vsqr[j])
+    model.voltage_drop = pyo.Constraint(model.L, rule=voltage_drop_rule)
+
+    # Solver
+    solver = SolverFactory('gurobi')
+    result = solver.solve(model, tee=False)
+
+    if result.solver.status != pyo.SolverStatus.ok:
+        raise Exception('Solver failed to find a solution')
+
+    # Extract and return the solution
+    voltages = {n: np.sqrt(model.Vsqr[n].value) for n in model.N}
+    currents = {(i, j): np.sqrt(model.Isqr[i, j].value) for (i, j) in model.L}
+    power_flows = {(i, j): (model.Pl[i, j].value, model.Ql[i, j].value) for (i, j) in model.L}
+
+    return {'Voltages': voltages, 'Currents': currents, 'Power Flows': power_flows}
