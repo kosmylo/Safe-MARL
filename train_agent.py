@@ -44,6 +44,7 @@ with open("./madrl/args/env_args/"+argv.env+".yaml", "r") as f:
     env_config_dict = yaml.safe_load(f)["env_args"]
 data_path = env_config_dict["data_path"].split("/")
 env_config_dict["data_path"] = "/".join(data_path)
+env_config_dict["alg"] = argv.alg
 
 # load default args
 with open("./madrl/args/default.yaml", "r") as f:
@@ -56,6 +57,8 @@ with open("./madrl/args/alg_args/" + argv.alg + ".yaml", "r") as f:
     alg_config_dict["action_high"] = env_config_dict.get("action_high", 1.0)
     alg_config_dict["action_bias"] = env_config_dict.get("action_bias", 0.0)  
     alg_config_dict["action_scale"] = env_config_dict.get("action_scale", 1.0)
+
+alg_config_dict["alg"] = argv.alg
 
 log_name = "-".join([argv.env, argv.alg])
 alg_config_dict = {**default_config_dict, **alg_config_dict}
@@ -125,12 +128,17 @@ for i in range(args.train_episodes_num):
     train.run(stat, i)
     train_logger.info(f"Episode {i} completed")
 
-    episode_reward = stat['mean_train_reward']
+    episode_reward = stat.get('mean_train_reward', 0.0)
     rewards.append(episode_reward)
-    policy_loss = stat['mean_policy_loss']
-    policy_losses.append(policy_loss)
-    value_loss = stat['mean_value_loss']
-    value_losses.append(value_loss)
+    
+    # Use None if the loss isn't computed
+    policy_loss = stat.get('mean_train_policy_loss', None)
+    if policy_loss is not None:
+        policy_losses.append(policy_loss)
+
+    value_loss = stat.get('mean_train_value_loss', None)
+    if value_loss is not None:
+        value_losses.append(value_loss)
     
     train.logging(stat)
     if i%args.save_model_freq == args.save_model_freq-1:
@@ -143,6 +151,6 @@ end_time = time.time()
 total_training_time = end_time - start_time
 train_logger.info(f"Total Training Time: {total_training_time:.2f} seconds")
 
-plot_training_metrics(rewards)
+plot_training_metrics(rewards, policy_losses, value_losses)
 
 logger.close()

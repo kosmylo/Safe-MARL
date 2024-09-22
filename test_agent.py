@@ -7,6 +7,7 @@ from madrl.models.model_registry import Model, Strategy
 from madrl.environments.flex_provision.flexibility_provision_env import FlexibilityProvisionEnv
 from utils.util import convert
 from utils.tester import PGTester
+from utils.plot_res import plot_testing_results
 
 parser = argparse.ArgumentParser(description="Test rl agent.")
 parser.add_argument("--save-path", type=str, nargs="?", default="./", help="Please enter the directory of saving model.")
@@ -14,7 +15,6 @@ parser.add_argument("--alg", type=str, nargs="?", default="maddpg", help="Please
 parser.add_argument("--env", type=str, nargs="?", default="flex_provision", help="Please enter the env name.")
 parser.add_argument("--test-mode", type=str, nargs="?", default="single", help="Please input the valid test mode: single or batch.")
 parser.add_argument("--test-day", type=int, nargs="?", default=730, help="Please input the day you would test if the test mode is single.")
-parser.add_argument("--render", action="store_true", help="Activate the rendering of the environment.")
 argv = parser.parse_args()
 
 # load env args
@@ -24,12 +24,12 @@ data_path = env_config_dict["data_path"].split("/")
 env_config_dict["data_path"] = "/".join(data_path)
 
 # for one-day test
-env_config_dict["episode_limit"] = 480
+env_config_dict["episode_limit"] = 96
 
 # load default args
 with open("./madrl/args/default.yaml", "r") as f:
     default_config_dict = yaml.safe_load(f)
-default_config_dict["max_steps"] = 480
+default_config_dict["max_steps"] = 96
 
 # load alg args
 with open("./madrl/args/alg_args/"+argv.alg+".yaml", "r") as f:
@@ -74,7 +74,7 @@ behaviour_net.load_state_dict(checkpoint['model_state_dict'])
 print (f"{args}\n")
 
 if strategy == "pg":
-    test = PGTester(args, behaviour_net, env, argv.render)
+    test = PGTester(args, behaviour_net, env)
 elif strategy == "q":
     raise NotImplementedError("This needs to be implemented.")
 else:
@@ -86,7 +86,14 @@ if argv.test_mode == 'single':
     record = test.run(argv.test_day, 23, 2)
     with open('test_record_'+log_name+f'_day{argv.test_day}'+'.pickle', 'wb') as f:
         pickle.dump(record, f, pickle.HIGHEST_PROTOCOL)
+
+    # After saving the test record, plot the results
+    plot_testing_results(record)
+
 elif argv.test_mode == 'batch':
     record = test.batch_run(10)
     with open('test_record_'+log_name+'_'+argv.test_mode+'.pickle', 'wb') as f:
         pickle.dump(record, f, pickle.HIGHEST_PROTOCOL)
+    
+    # After saving the test record, plot the results
+    plot_testing_results(record)

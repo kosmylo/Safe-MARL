@@ -10,20 +10,27 @@ train_logger = logging.getLogger('TrainLogger')
 class PGTrainer(object):
     def __init__(self, args, model, env, logger):
         self.args = args
+        self.env = env
         self.device = th.device( "cuda" if th.cuda.is_available() and self.args.cuda else "cpu" )
         self.logger = logger
         self.episodic = self.args.episodic
-        if self.args.target:
-            target_net = model(self.args).to(self.device)
-            self.behaviour_net = model(self.args, target_net).to(self.device)
+        if args.alg == "safemaddpg":
+            if self.args.target:
+                target_net = model(self.args, self.env).to(self.device)
+                self.behaviour_net = model(self.args, self.env, target_net).to(self.device)
+            else:
+                self.behaviour_net = model(self.args, self.env).to(self.device)
         else:
-            self.behaviour_net = model(self.args).to(self.device)
+            if self.args.target:
+                target_net = model(self.args).to(self.device)
+                self.behaviour_net = model(self.args, target_net).to(self.device)
+            else:
+                self.behaviour_net = model(self.args).to(self.device)
         if self.args.replay:
             if not self.episodic:
                 self.replay_buffer = TransReplayBuffer( int(self.args.replay_buffer_size) )
             else:
                 self.replay_buffer = EpisodeReplayBuffer( int(self.args.replay_buffer_size) )
-        self.env = env
         self.policy_optimizer = optim.RMSprop( self.behaviour_net.policy_dicts.parameters(), lr=args.policy_lrate, alpha=0.99, eps=1e-5 )
         self.value_optimizer = optim.RMSprop( self.behaviour_net.value_dicts.parameters(), lr=args.value_lrate, alpha=0.99, eps=1e-5 )
         if self.args.mixer:

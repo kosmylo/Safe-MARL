@@ -2,11 +2,29 @@ from utils.create_net import create_network
 from utils.pf import power_flow_solver
 from utils.plot_res import plot_power_flow_results
 import yaml
+import os
 import logging
 
+# Set up logging directory and file
+log_dir = "logs/run_pf_logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file_path = os.path.join(log_dir, "run_pf_log.txt")
+
 # Configure the logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+run_pf_logger = logging.getLogger('RunPFLogger')
+run_pf_logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# File handler
+file_handler = logging.FileHandler(log_file_path, mode='w')
+file_handler.setFormatter(formatter)
+run_pf_logger.addHandler(file_handler)
+
+# Stream handler (optional, if you want to see logs in the console)
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+run_pf_logger.addHandler(stream_handler)
 
 # load env args
 with open("./madrl/args/env_args/flex_provision.yaml", "r") as f:
@@ -39,7 +57,7 @@ initial_ess_energy = {node: env_config_dict['e_max']/2 for node in env_config_di
 results = power_flow_solver(network_data, active_power_demand, reactive_power_demand, power_reduction, pv_power, pv_reactive_power, ess_charging, ess_discharging, initial_ess_energy)
 
 # Log the results
-logger.info('Power flow results: %s', results)
+run_pf_logger.info('Power flow results: %s', results)
 
 # Plot the results if necessary
 plot_power_flow_results(results)

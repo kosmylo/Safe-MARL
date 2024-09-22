@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 class PGTester(object):
-    def __init__(self, args, behaviour_net, env, render=False):
+    def __init__(self, args, behaviour_net, env):
         self.env = env
         self.behaviour_net = behaviour_net.cuda().eval() if args.cuda else behaviour_net.eval()
         self.args = args
@@ -12,7 +12,6 @@ class PGTester(object):
         self.n_ = self.args.agent_num
         self.obs_dim = self.args.obs_size
         self.act_dim = self.args.action_dim
-        self.render = render
 
     def run(self, day, hour, quarter):
         # reset env    
@@ -26,31 +25,41 @@ class PGTester(object):
                   "bus_active": [], 
                   "bus_reactive": [], 
                   "bus_voltage": [],
-                  "line_loss": []
+                  "ess_energy": [],
+                  "power_reduction": [],
+                  "ess_charging": [],
+                  "ess_discharging": [],
+                  "price": []
             }
 
-        record["pv_active"].append(self.env._get_sgen_active())
-        record["pv_reactive"].append(self.env._get_sgen_reactive())
-        record["bus_active"].append(self.env._get_res_bus_active())
-        record["bus_reactive"].append(self.env._get_res_bus_reactive())
-        record["bus_voltage"].append(self.env._get_res_bus_v())
-        record["line_loss"].append(self.env._get_res_line_loss())
+        record["pv_active"].append(self.env._get_pv_active())
+        record["pv_reactive"].append(self.env._get_pv_reactive())
+        record["bus_active"].append(self.env._get_bus_active())
+        record["bus_reactive"].append(self.env._get_bus_reactive())
+        record["bus_voltage"].append(self.env._get_bus_v())
+        record["ess_energy"].append(self.env._get_ess_energy())
+        record["power_reduction"].append(self.env._get_power_reduction())  
+        record["ess_charging"].append(self.env._get_ess_charging())     
+        record["ess_discharging"].append(self.env._get_ess_discharging())
+        record["price"].append(self.env._get_price())
 
         for t in range(self.args.max_steps):
-            if self.render:
-                self.env.render()
-                time.sleep(0.01)
             state_ = prep_obs(state).contiguous().view(1, self.n_, self.obs_dim).to(self.device)
             action, _, _, _, hid = self.behaviour_net.get_actions(state_, status='test', exploration=False, actions_avail=th.tensor(self.env.get_avail_actions()), target=False, last_hid=last_hid)
             _, actual = translate_action(self.args, action, self.env)
-            reward, done, info = self.env.step(actual, add_noise=False)
+            reward, done, info = self.env.step(actual)
             done_ = done or t==self.args.max_steps-1
-            record["pv_active"].append(self.env._get_sgen_active())
-            record["pv_reactive"].append(self.env._get_sgen_reactive())
-            record["bus_active"].append(self.env._get_res_bus_active())
-            record["bus_reactive"].append(self.env._get_res_bus_reactive())
-            record["bus_voltage"].append(self.env._get_res_bus_v())
-            record["line_loss"].append(self.env._get_res_line_loss())
+            record["pv_active"].append(self.env._get_pv_active())
+            record["pv_reactive"].append(self.env._get_pv_reactive())
+            record["bus_active"].append(self.env._get_bus_active())
+            record["bus_reactive"].append(self.env._get_bus_reactive())
+            record["bus_voltage"].append(self.env._get_bus_v())
+            record["ess_energy"].append(self.env._get_ess_energy())
+            record["power_reduction"].append(self.env._get_power_reduction())  
+            record["ess_charging"].append(self.env._get_ess_charging())     
+            record["ess_discharging"].append(self.env._get_ess_discharging())
+            record["price"].append(self.env._get_price())
+            
             next_state = self.env.get_obs()
             # set the next state
             state = next_state
@@ -70,9 +79,6 @@ class PGTester(object):
             last_hid = self.behaviour_net.policy_dicts[0].init_hidden()
 
             for t in range(self.args.max_steps):
-                if self.render:
-                    self.env.render()
-                    time.sleep(0.01)
                 state_ = prep_obs(state).contiguous().view(1, self.n_, self.obs_dim).to(self.device)
                 action, _, _, _, hid = self.behaviour_net.get_actions(state_, status='test', exploration=False, actions_avail=th.tensor(self.env.get_avail_actions()), target=False, last_hid=last_hid)
                 _, actual = translate_action(self.args, action, self.env)
