@@ -28,7 +28,7 @@ def plot_optimization_results(results):
     # Plot Power Reduction
     plt.figure(figsize=(10, 6))
     for b in buildings:
-        plt.plot(times, [results['Power Reduction'][t][b] * env_config_dict['s_nom'] for t in times], marker='o', label=f'Building {b}')
+        plt.plot(times, [results['Power Reduction'][t][b] * env_config_dict['s_nom'] for t in times], label=f'Building {b}')
     plt.title('Power Reduction by Buildings')
     plt.xlabel('Time')
     plt.ylabel('Power Reduction (kW)')
@@ -40,7 +40,7 @@ def plot_optimization_results(results):
     # Plot Reactive Power Provided by PVs
     plt.figure(figsize=(10, 6))
     for pv in pv_ids:
-        plt.plot(times, [results['PV Reactive Power'][t][pv] * env_config_dict['s_nom'] for t in times], marker='o', label=f'PV {pv}')
+        plt.plot(times, [results['PV Reactive Power'][t][pv] * env_config_dict['s_nom'] for t in times], label=f'PV {pv}')
     plt.title('Reactive Power Provided by PVs')
     plt.xlabel('Time')
     plt.ylabel('Reactive Power (kVar)')
@@ -52,7 +52,7 @@ def plot_optimization_results(results):
     # Plot ESS Charging
     plt.figure(figsize=(10, 6))
     for k in ess_ids:
-        plt.plot(times, [results['ESS Charging'][t][k] * env_config_dict['s_nom'] for t in times], marker='o', label=f'ESS {k}')
+        plt.plot(times, [results['ESS Charging'][t][k] * env_config_dict['s_nom'] for t in times], label=f'ESS {k}')
     plt.title('ESS Charging Power')
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
@@ -64,7 +64,7 @@ def plot_optimization_results(results):
     # Plot ESS Discharging
     plt.figure(figsize=(10, 6))
     for k in ess_ids:
-        plt.plot(times, [results['ESS Discharging'][t][k] * env_config_dict['s_nom'] for t in times], marker='o', label=f'ESS {k}')
+        plt.plot(times, [results['ESS Discharging'][t][k] * env_config_dict['s_nom'] for t in times], label=f'ESS {k}')
     plt.title('ESS Discharging Power')
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
@@ -76,7 +76,7 @@ def plot_optimization_results(results):
     # Plot ESS Charging Indicator
     plt.figure(figsize=(10, 6))
     for k in ess_ids:
-        plt.plot(times, [results['Charging Indicator'][t][k] for t in times], marker='o', label=f'ESS {k}')
+        plt.plot(times, [results['Charging Indicator'][t][k] for t in times], label=f'ESS {k}')
     plt.title('ESS Charging Indicator')
     plt.xlabel('Time')
     plt.ylabel('Charging Indicator (0 or 1)')
@@ -88,7 +88,7 @@ def plot_optimization_results(results):
     # Plot ESS Energy
     plt.figure(figsize=(10, 6))
     for k in ess_ids:
-        plt.plot(times, [results['ESS Energy'][t][k] * env_config_dict['s_nom'] for t in times], marker='o', label=f'ESS {k}')
+        plt.plot(times, [results['ESS Energy'][t][k] * env_config_dict['s_nom'] for t in times], label=f'ESS {k}')
     plt.title('ESS Energy')
     plt.xlabel('Time')
     plt.ylabel('Energy (kWh)')
@@ -100,7 +100,7 @@ def plot_optimization_results(results):
     # Plot Voltage Profiles
     plt.figure(figsize=(10, 6))
     for n in buses:
-        plt.plot(times, [np.sqrt(results['Voltage Squared'][t][n]) for t in times], marker='o', label=f'Bus {n}')
+        plt.plot(times, [np.sqrt(results['Voltage Squared'][t][n]) for t in times], label=f'Bus {n}')
     plt.title('Voltage at Buses')
     plt.xlabel('Time')
     plt.ylabel('Voltage (p.u.)')
@@ -112,7 +112,7 @@ def plot_optimization_results(results):
     # Plot Active Power Load
     plt.figure(figsize=(10, 6))
     for n in buses:
-        plt.plot(times, [results['Active Power Load'][t][n] * env_config_dict['s_nom'] for t in times], marker='o', label=f'Bus {n}')
+        plt.plot(times, [results['Active Power Load'][t][n] * env_config_dict['s_nom'] for t in times], label=f'Bus {n}')
     plt.title('Active Power Load')
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
@@ -124,7 +124,7 @@ def plot_optimization_results(results):
     # Plot Reactive Power Load
     plt.figure(figsize=(10, 6))
     for n in buses:
-        plt.plot(times, [results['Reactive Power Load'][t][n] * env_config_dict['s_nom'] for t in times], marker='o', label=f'Bus {n}')
+        plt.plot(times, [results['Reactive Power Load'][t][n] * env_config_dict['s_nom'] for t in times], label=f'Bus {n}')
     plt.title('Reactive Power Load')
     plt.xlabel('Time')
     plt.ylabel('Power (kVar)')
@@ -136,7 +136,7 @@ def plot_optimization_results(results):
     # Plot Active Power from PVs
     plt.figure(figsize=(10, 6))
     for pv in pv_ids:
-        plt.plot(times, [results['PV Active Power'][t][pv] * env_config_dict['s_nom'] for t in times], marker='o', label=f'PV {pv}')
+        plt.plot(times, [results['PV Active Power'][t][pv] * env_config_dict['s_nom'] for t in times], label=f'PV {pv}')
     plt.title('Active Power from PVs')
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
@@ -148,7 +148,7 @@ def plot_optimization_results(results):
     # Plot Active Power Flow
     plt.figure(figsize=(10, 6))
     for l in lines:
-        plt.plot(times, [results['Active Power Flow'][t][l] * env_config_dict['s_nom'] for t in times], marker='o', label=f'Line {l}')
+        plt.plot(times, [results['Active Power Flow'][t][l] * env_config_dict['s_nom'] for t in times], label=f'Line {l}')
     plt.title('Active Power Flow on Lines')
     plt.xlabel('Time')
     plt.ylabel('Power (kW)')
@@ -160,7 +160,7 @@ def plot_optimization_results(results):
     # Plot Reactive Power Flow
     plt.figure(figsize=(10, 6))
     for l in lines:
-        plt.plot(times, [results['Reactive Power Flow'][t][l] * env_config_dict['s_nom'] for t in times], marker='o', label=f'Line {l}')
+        plt.plot(times, [results['Reactive Power Flow'][t][l] * env_config_dict['s_nom'] for t in times], label=f'Line {l}')
     plt.title('Reactive Power Flow on Lines')
     plt.xlabel('Time')
     plt.ylabel('Power (kVar)')
@@ -172,7 +172,7 @@ def plot_optimization_results(results):
     # Plot Currents on Lines
     plt.figure(figsize=(10, 6))
     for l in lines:
-        plt.plot(times, [np.sqrt(results['Current Squared'][t][l]) for t in times], marker='o', label=f'Line {l}')
+        plt.plot(times, [np.sqrt(results['Current Squared'][t][l]) for t in times], label=f'Line {l}')
     plt.title('Current Flow on Lines')
     plt.xlabel('Time')
     plt.ylabel('Current (pu)')
