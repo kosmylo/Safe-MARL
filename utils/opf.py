@@ -23,7 +23,12 @@ def opf_model(network_data, flex_price, active_power_demand, reactive_power_dema
     model.G = pyo.Set(initialize=network_data['PVs_at_buildings'])  # PVs
     model.K = pyo.Set(initialize=network_data['ESSs_at_buildings'])  # ESSs
 
+    # Calculate time step duration
+    total_hours = 24  # Assuming a 24-hour period
+    time_step_duration = total_hours / env_config_dict['episode_limit']
+
     # Define Parameters
+    model.delta_t = pyo.Param(initialize=time_step_duration)
     model.R = pyo.Param(model.L, initialize=network_data['line_resistances']) # Resistance of each line
     model.X = pyo.Param(model.L, initialize=network_data['line_reactances']) # Reactance of each line
     model.Vmin = pyo.Param(initialize=env_config_dict['v_min'])  # Minimum voltage at each bus
@@ -55,31 +60,32 @@ def opf_model(network_data, flex_price, active_power_demand, reactive_power_dema
     model.Ql = pyo.Var(model.L, model.T, within=pyo.Reals)  # Reactive power flow on each line
     model.Isqr = pyo.Var(model.L, model.T, within=pyo.NonNegativeReals)  # Current flow on each line
     model.charging_indicator = pyo.Var(model.K, model.T, within=pyo.Binary) # Binary variable that shows if the ESS is charging
+    model.Vsqr = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals, initialize=1)
+    model.Ps = pyo.Var(model.N, model.T, within=pyo.Reals, initialize=0)
+    model.Qs = pyo.Var(model.N, model.T, within=pyo.Reals, initialize=0)
 
-    # Define Variables with conditional initialization
-    model.Vsqr = pyo.Var(model.N, model.T, within=pyo.NonNegativeReals, initialize=lambda model, n, t: 1 if network_data['bus_types'][n] == 1 else 1)
+    # Fix Variables at Substations and Non-Substation Nodes
     for n in model.N:
-        if network_data['bus_types'][n] == 1:
-            model.Vsqr[n, :].fixed = True  # Fix voltage at substations
-
-    model.Ps = pyo.Var(model.N, model.T, within=pyo.Reals, initialize=lambda model, n, t: 0 if network_data['bus_types'][n] == 0 else 0)
-    for n in model.N:
-        if network_data['bus_types'][n] == 0:
-            model.Ps[n, :].fixed = True  # No active power generation at non-substation nodes
-
-    model.Qs = pyo.Var(model.N, model.T, within=pyo.Reals, initialize=lambda model, n, t: 0 if network_data['bus_types'][n] == 0 else 0)
-    for n in model.N:
-        if network_data['bus_types'][n] == 0:
-            model.Qs[n, :].fixed = True  # No reactive power generation at non-substation nodes
+        for t in model.T:
+            if network_data['bus_types'][n] == 1:  # Substation bus
+                model.Vsqr[n, t].fix(1)
+            else:  # Non-substation bus
+                model.Ps[n, t].fix(0)
+                model.Qs[n, t].fix(0)
 
     # Define Objective Function
     def objective_rule(model):
-        return sum(model.lambda_flex[t] * model.Pred[b, t] - 
-                   model.cost_pv[g] * model.Qpv[g, t] - 
-                   model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) - 
-                   sum(model.R[i, j] * model.Isqr[i, j, t] for (i, j) in model.L) -
-                   model.discomfort[b] * model.Pred[b, t] for b in model.B for k in model.K for g in model.G for t in model.T)
-    model.obj = pyo.Objective(rule=objective_rule, sense=pyo.maximize)    
+        return sum(
+            model.delta_t * (
+                sum(model.lambda_flex[t] * model.Pred[b, t] for b in model.B)
+                - sum(model.cost_pv[g] * model.Qpv[g, t] for g in model.G)
+                - sum(model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) for k in model.K)
+                - sum(model.R[i, j] * model.Isqr[i, j, t] for (i, j) in model.L)
+                - sum(model.discomfort[b] * model.Pred[b, t] for b in model.B)
+            )
+            for t in model.T
+        )
+    model.obj = pyo.Objective(rule=objective_rule, sense=pyo.maximize)
 
     # Define Constraints
     def active_power_flow_rule(model, n, t):
@@ -130,16 +136,16 @@ def opf_model(network_data, flex_price, active_power_demand, reactive_power_dema
         else:
             # Energy at time t based on the energy at time t-1 plus net energy changes
             return (model.E[k, t] == model.E[k, t-1] + 
-                    (model.eta_ch[k] * model.Pesc[k, t-1] - 
+                    model.delta_t * (model.eta_ch[k] * model.Pesc[k, t-1] - 
                      (1 / model.eta_dis[k]) * model.Pesd[k, t-1]))
     model.ess_energy_balance = pyo.Constraint(model.K, model.T, rule=ess_energy_balance_rule)
 
     def no_simultaneous_charge_rule(model, k, t):
-        return model.Pesc[k, t] <= model.Pch_max * (1 - model.charging_indicator[k, t])
+        return model.Pesc[k, t] <= model.Pch_max * model.charging_indicator[k, t]
     model.no_simultaneous_charge = pyo.Constraint(model.K, model.T, rule=no_simultaneous_charge_rule)
 
     def no_simultaneous_discharge_rule(model, k, t):
-        return model.Pesd[k, t] <= model.Pdis_max * model.charging_indicator[k, t]
+        return model.Pesd[k, t] <= model.Pdis_max * (1 - model.charging_indicator[k, t])
     model.no_simultaneous_discharge = pyo.Constraint(model.K, model.T, rule=no_simultaneous_discharge_rule)
 
     # Solve the model
