@@ -19,7 +19,12 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
     model.G = pyo.Set(initialize=network_data['PVs_at_buildings'])  # PVs
     model.K = pyo.Set(initialize=network_data['ESSs_at_buildings'])  # ESSs
 
+    # Calculate time step duration
+    total_hours = 24  # Assuming a 24-hour period
+    time_step_duration = total_hours / env_config_dict['episode_limit']
+
     # Define Parameters
+    model.delta_t = pyo.Param(initialize=time_step_duration)
     model.R = pyo.Param(model.L, initialize=network_data['line_resistances'])  # Resistance of each line
     model.X = pyo.Param(model.L, initialize=network_data['line_reactances'])  # Reactance of each line
     model.Pload = pyo.Param(model.N, initialize=active_power_demand)  # Active power demand at each bus
@@ -83,7 +88,7 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
     model.voltage_drop = pyo.Constraint(model.L, rule=voltage_drop_rule)
 
     def ess_energy_update_rule(model, k):
-        return model.E_next[k] == model.E_init[k] + model.eta_ch[k] * model.Pesc[k] - (1 / model.eta_dis[k]) * model.Pesd[k]
+        return model.E_next[k] == model.E_init[k] + model.delta_t * (model.eta_ch[k] * model.Pesc[k] - (1 / model.eta_dis[k]) * model.Pesd[k])
     model.ess_energy_update = pyo.Constraint(model.K, rule=ess_energy_update_rule)
 
     # Solver
