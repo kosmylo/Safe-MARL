@@ -54,6 +54,12 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
         else:
             model.Ps[n].fix(0)  # Fix active power at non-slack buses to zero
             model.Qs[n].fix(0)  # Fix reactive power at non-slack buses to zero
+
+    # Define Objective Function
+    def objective_rule(model):
+        return (sum(model.R[i, j] * model.Isqr[i, j] for (i, j) in model.L))
+    
+    model.obj = pyo.Objective(rule=objective_rule, sense=pyo.minimize)
     
     # Constraints
     def active_power_balance_rule(model, n):
@@ -61,8 +67,8 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
         return (sum(model.Pl[i, j] for (i, j) in model.L if j == n) - 
                sum(model.Pl[i, j] + model.R[i, j] * model.Isqr[i, j] for (i, j) in model.L if i == n) + 
                model.Ps[n] - 
-               model.Pload[n] + (model.Pred[n] if n in model.Pred else 0) + 
-               (model.Ppv[n] if n in model.Ppv else 0) - 
+               model.Pload[n] + (model.Pred[n] if n in model.B else 0) + 
+               (model.Ppv[n] if n in model.G else 0) - 
                (model.Pesc[n] if n in model.K else 0) + 
                (model.Pesd[n] if n in model.K else 0) == 0)
     model.active_power_balance = pyo.Constraint(model.N, rule=active_power_balance_rule)
@@ -92,7 +98,7 @@ def power_flow_solver(network_data, active_power_demand, reactive_power_demand, 
     model.ess_energy_update = pyo.Constraint(model.K, rule=ess_energy_update_rule)
 
     # Solver
-    solver = SolverFactory('gurobi')
+    solver = SolverFactory('ipopt')
     result = solver.solve(model, tee=False)
 
     if result.solver.status != pyo.SolverStatus.ok:
@@ -137,6 +143,12 @@ def power_flow_solver_simplified(network_data, P_net, Q_net):
             model.Ps[n].fix(0)  # No generation at non-slack buses
             model.Qs[n].fix(0)  # No generation at non-slack buses
 
+    # Define Objective Function
+    def objective_rule(model):
+        return (sum(model.R[i, j] * model.Isqr[i, j] for (i, j) in model.L))
+    
+    model.obj = pyo.Objective(rule=objective_rule, sense=pyo.minimize)
+
     # Constraints
     def active_power_balance_rule(model, n):
         # Active power balance at bus n
@@ -166,7 +178,7 @@ def power_flow_solver_simplified(network_data, P_net, Q_net):
     model.voltage_drop = pyo.Constraint(model.L, rule=voltage_drop_rule)
 
     # Solver
-    solver = SolverFactory('gurobi')
+    solver = SolverFactory('ipopt')
     result = solver.solve(model, tee=False)
 
     if result.solver.status != pyo.SolverStatus.ok:
