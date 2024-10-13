@@ -681,7 +681,7 @@ class FlexibilityProvisionEnv(MultiAgentEnv):
         revenue = sum(lambda_flex * power_reduction[b] for b in power_reduction)
         der_cost = sum(self.args.pv_cost * q_pv[g] for g in q_pv)
         ess_cost = sum(self.args.ess_cost * (ess_charging[k] + ess_discharging[k]) for k in ess_charging)
-        discomfort_penalty = sum(self.args.discomfort_coeff * power_reduction[b] for b in power_reduction)
+        discomfort_penalty = sum(self.args.discomfort_coeff * power_reduction[b]**2 for b in power_reduction)
         voltage_penalty = sum(self.args.voltage_coeff * max(0, v - self.args.v_max, self.args.v_min - v) for v in voltages.values())
         reward = revenue - der_cost - ess_cost - discomfort_penalty - voltage_penalty
 

@@ -81,7 +81,7 @@ def opf_model(network_data, flex_price, active_power_demand, reactive_power_dema
                 - sum(model.cost_pv[g] * model.Qpv[g, t] for g in model.G)
                 - sum(model.cost_ess[k] * (model.Pesc[k, t] + model.Pesd[k, t]) for k in model.K)
                 - sum(model.R[i, j] * model.Isqr[i, j, t] for (i, j) in model.L)
-                - sum(model.discomfort[b] * model.Pred[b, t] for b in model.B)
+                - sum(model.discomfort[b] * model.Pred[b, t]**2 for b in model.B)
             )
             for t in model.T
         )
@@ -136,8 +136,8 @@ def opf_model(network_data, flex_price, active_power_demand, reactive_power_dema
         else:
             # Energy at time t based on the energy at time t-1 plus net energy changes
             return (model.E[k, t] == model.E[k, t-1] + 
-                    model.delta_t * (model.eta_ch[k] * model.Pesc[k, t-1] - 
-                     (1 / model.eta_dis[k]) * model.Pesd[k, t-1]))
+                    model.delta_t * (model.eta_ch[k] * model.Pesc[k, t] - 
+                     (1 / model.eta_dis[k]) * model.Pesd[k, t]))
     model.ess_energy_balance = pyo.Constraint(model.K, model.T, rule=ess_energy_balance_rule)
 
     def no_simultaneous_charge_rule(model, k, t):

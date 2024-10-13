@@ -1,7 +1,7 @@
 env: "flexibility_provision"
 
 env_args:
-    history: 1
+    history: 24
     pv_scale: 0.15 # equal to pv_cap
     demand_scale: 1.0 
     reactive_scale: 1.0 
